@@ -28,15 +28,20 @@ def onKeyPress(event):
     try:
         if (ord(event.char) == 32):
             
-            cur_letter = 0
+            print(len(wordbank[random_nums[cur_word]]))
+            print(cur_letter)
             
             if right:
                 text.tag_remove('current_correct', '1.%s' % (cur_char), '1.%s' % (cur_char + len(wordbank[random_nums[cur_word]])))
-                text.tag_add('correct', '1.%s' % (cur_char), '1.%s' % (cur_char + len(wordbank[random_nums[cur_word]])))
+                if cur_letter < len(wordbank[random_nums[cur_word]]):
+                    text.tag_add('wrong', '1.%s' % (cur_char), '1.%s' % (cur_char + len(wordbank[random_nums[cur_word]])))
+                else:
+                    text.tag_add('correct', '1.%s' % (cur_char), '1.%s' % (cur_char + len(wordbank[random_nums[cur_word]])))
             else:
                 text.tag_remove('current_wrong', '1.%s' % (cur_char), '1.%s' % (cur_char + len(wordbank[random_nums[cur_word]])))
                 text.tag_add('wrong', '1.%s' % (cur_char), '1.%s' % (cur_char + len(wordbank[random_nums[cur_word]])))
 
+            cur_letter = 0
             cur_char += len(wordbank[random_nums[cur_word]]) + 1
             cur_word += 1
 
