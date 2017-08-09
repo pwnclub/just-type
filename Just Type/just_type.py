@@ -9,6 +9,7 @@ num_words_display = 8
 
 cur_char = 0
 cur_letter = 0
+wrong_letter = 0
 cur_word = 0
 right = True
 
@@ -18,18 +19,32 @@ def onKeyPress(event):
     
     global cur_char
     global cur_letter
+    global wrong_letter
     global cur_word
     global right
     
     #print(event.char)
     #print(cur_char)
     #print(ord(event.char))
+    print(wrong_letter)
+
+    if (ord(event.char) == 8):
+        wrong_letter -= 1
+        cur_letter -= 1
+        if (wrong_letter <= 0):
+            text.tag_remove('current_wrong', '1.%s' % (cur_char), '1.%s' % (cur_char + len(wordbank[random_nums[cur_word]])))
+            text.tag_add('current_correct', '1.%s' % (cur_char), '1.%s' % (cur_char + len(wordbank[random_nums[cur_word]])))
+            wrong_letter = 0
+        if (cur_letter <= 0):
+            cur_letter = 0
+        right = True
+        return
 
     try:
         if (ord(event.char) == 32):
             
-            print(len(wordbank[random_nums[cur_word]]))
-            print(cur_letter)
+            #print(len(wordbank[random_nums[cur_word]]))
+            #print(cur_letter)
             
             if right:
                 text.tag_remove('current_correct', '1.%s' % (cur_char), '1.%s' % (cur_char + len(wordbank[random_nums[cur_word]])))
@@ -42,6 +57,7 @@ def onKeyPress(event):
                 text.tag_add('wrong', '1.%s' % (cur_char), '1.%s' % (cur_char + len(wordbank[random_nums[cur_word]])))
 
             cur_letter = 0
+            wrong_letter = 0
             cur_char += len(wordbank[random_nums[cur_word]]) + 1
             cur_word += 1
 
@@ -67,6 +83,7 @@ def onKeyPress(event):
             if cur_letter > 0:
                 text.tag_remove('current_correct', '1.%s' % (cur_char), '1.%s' % (cur_char + len(wordbank[random_nums[cur_word]])))
             text.tag_add('current_wrong', '1.%s' % (cur_char), '1.%s' % (cur_char + len(wordbank[random_nums[cur_word]])))
+            wrong_letter += 1
             right = False
     except:
         text.config(state=DISABLED)
