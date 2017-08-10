@@ -13,8 +13,8 @@ class MyWindow(Frame):
         self.timer_limit = 10
 
         self.wordbank = ['the', 'be', 'to', 'of', 'and', 'a', 'in', 'that', 'have', 'I', 'it', 'for', 'not', 'on', 'with', 'he', 'as', 'you', 'do']
-        self.cur_rand_nums = [0] * self.num_words_display
-        self.nxt_rand_nums = [0] * self.num_words_display
+        self.cur_rand_nums = []
+        self.nxt_rand_nums = []
 
         self.cur_char = 0
         self.cur_letter = 0
@@ -50,7 +50,7 @@ class MyWindow(Frame):
 
         for i in range(0, self.num_words_display):
             random_num = random.randint(0, len(self.wordbank)-1)
-            self.cur_rand_nums[i] = random_num
+            self.cur_rand_nums.append(random_num)
 
             self.text.insert('end', self.wordbank[random_num] + ' ')
 
@@ -58,7 +58,7 @@ class MyWindow(Frame):
 
         for i in range(0, self.num_words_display):
             random_num = random.randint(0, len(self.wordbank)-1)
-            self.nxt_rand_nums[i] = random_num
+            self.nxt_rand_nums.append(random_num)
 
             self.text.insert('end', self.wordbank[random_num] + ' ')
 
