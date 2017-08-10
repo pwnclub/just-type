@@ -1,6 +1,8 @@
 from tkinter import *
 from tkinter import ttk
 import random
+import time
+import os
 
 num_words_display = 12
 
@@ -17,6 +19,20 @@ correct_chars = 0
 wrong_words = 0
 wrong_chars = 0
 
+startCount = False
+
+def countdown(count):
+    global startCount
+    
+    time_or_wpm.set('{}'.format(count))
+
+    if count > 0:
+        root.after(1000, countdown, count-1)
+    else:
+        wpm = correct_chars // 5
+        time_or_wpm.set('WPM: {}'.format(wpm))
+        #os.execl(sys.executable, sys.executable, *sys.argv)
+
 def onKeyPress(event):
     global cur_char
     global cur_letter
@@ -27,11 +43,16 @@ def onKeyPress(event):
     global correct_words
     global correct_chars
     global wrong_words 
-    global wrong_chars 
+    global wrong_chars
+    global startCount
 
     if entry != entry.focus_get():
         return
 
+    if startCount == False:
+        startCount = True
+        countdown(60)
+        
     text.config(state=NORMAL)
 
     bank_index = cur_random_nums[cur_word]
@@ -62,16 +83,13 @@ def onKeyPress(event):
             if wrong_letter == 0 and cur_letter >= len(wordbank[bank_index]):
                 addEffect('correct')
                 correct_words += 1
+                correct_word_amount.set('Correct: {}'.format(correct_words))
                 correct_chars += len(wordbank[bank_index])
             else:
                 addEffect('wrong')
                 wrong_words += 1
+                wrong_word_amount.set('Incorrect: {}'.format(wrong_words))
                 wrong_chars += len(wordbank[bank_index])
-            
-            print('Correct Words Typed: ', correct_words)
-            print('Correct Characters Typed: ', correct_chars)
-            print('Wrong Words Typed: ', wrong_words)
-            print('Wrong Characters Typed: ', wrong_chars)
             
             cur_letter = 0
             wrong_letter = 0
@@ -103,12 +121,12 @@ def onKeyPress(event):
 def addEffect(typeOf):
     global cur_char
     bank_index = cur_random_nums[cur_word] 
-    text.tag_add(typeOf, '1.%s' % (cur_char), '1.%s' % (cur_char + len(wordbank[bank_index])))
+    text.tag_add(typeOf, '1.{}'.format(cur_char), '1.{}'.format(cur_char + len(wordbank[bank_index])))
 
 def removeEffect(typeOf):
     global cur_char
     bank_index = cur_random_nums[cur_word]
-    text.tag_remove(typeOf, '1.%s' % (cur_char), '1.%s' % (cur_char + len(wordbank[bank_index])))
+    text.tag_remove(typeOf, '1.{}'.format(cur_char), '1.{}'.format(cur_char + len(wordbank[bank_index])))
 
 def moveNextLine():
     global cur_char
@@ -136,9 +154,23 @@ def moveNextLine():
         
 root = Tk()
 typing = StringVar()
+correct_word_amount = StringVar()
+wrong_word_amount = StringVar()
+time_or_wpm = StringVar()
 
 text = Text(root, width=50, height=2)
 entry = Entry(root, textvariable=typing, takefocus=0)
+correct_word_label = Label(root, foreground='green')
+wrong_word_label = Label(root, foreground='red')
+countdown_label = Label(root)
+
+correct_word_label['textvariable'] = correct_word_amount
+wrong_word_label['textvariable'] = wrong_word_amount
+countdown_label['textvariable'] = time_or_wpm
+
+correct_word_amount.set('Correct: {}'.format(correct_words))
+wrong_word_amount.set('Incorrect: {}'.format(wrong_words))
+time_or_wpm.set('Type to start!')
 
 entry.focus_set()
 
@@ -166,6 +198,10 @@ text.tag_config('wrong', foreground='red')
 
 text.pack()
 entry.pack()
+correct_word_label.pack()
+wrong_word_label.pack()
+countdown_label.pack()
+              
 root.bind('<KeyPress>', onKeyPress)
 
 root.mainloop()
