@@ -4,205 +4,204 @@ import random
 import time
 import os
 
-num_words_display = 12
 
-wordbank = ['the', 'be', 'to', 'of', 'and', 'a', 'in', 'that', 'have', 'I', 'it', 'for', 'not', 'on', 'with', 'he', 'as', 'you', 'do']
-cur_random_nums = [0]*num_words_display
-next_random_nums = [0]*num_words_display
+class MyWindow(Frame):
+    def __init__(self, parent):
+        super().__init__()
 
-cur_char = 0
-cur_letter = 0
-wrong_letter = 0
-cur_word = 0
-correct_words = 0
-correct_chars = 0
-wrong_words = 0
-wrong_chars = 0
+        self.num_words_display = 12
+        self.timer_limit = 10
 
-startCount = False
+        self.wordbank = ['the', 'be', 'to', 'of', 'and', 'a', 'in', 'that', 'have', 'I', 'it', 'for', 'not', 'on', 'with', 'he', 'as', 'you', 'do']
+        self.cur_rand_nums = [0] * self.num_words_display
+        self.nxt_rand_nums = [0] * self.num_words_display
 
-def countdown(count):
-    global startCount
-    
-    time_or_wpm.set('{}'.format(count))
+        self.cur_char = 0
+        self.cur_letter = 0
+        self.wrong_letter = 0
+        self.cur_word = 0
+        self.right_words = 0
+        self.right_chars = 0
+        self.wrong_words = 0
+        self.wrong_chars = 0
 
-    if count > 0:
-        root.after(1000, countdown, count-1)
-    else:
-        wpm = correct_chars // 5
-        time_or_wpm.set('WPM: {}'.format(wpm))
-        #os.execl(sys.executable, sys.executable, *sys.argv)
+        self.start_count = False
 
-def onKeyPress(event):
-    global cur_char
-    global cur_letter
-    global wrong_letter
-    global cur_word
-    global cur_random_nums
-    global next_random_nums
-    global correct_words
-    global correct_chars
-    global wrong_words 
-    global wrong_chars
-    global startCount
+        self.typing = StringVar()
+        self.right_cnt = StringVar()
+        self.wrong_cnt = StringVar()
+        self.time_or_wpm = StringVar()
 
-    if entry != entry.focus_get():
-        return
+        self.text = Text(self, width=50, height=2)
+        self.entry = Entry(self, textvariable=self.typing, takefocus=0)
+        self.right_word_label = Label(self, foreground='green')
+        self.wrong_word_label = Label(self, foreground='red')
+        self.countdown_label = Label(self)
 
-    if startCount == False:
-        startCount = True
-        countdown(60)
-        
-    text.config(state=NORMAL)
+        self.right_word_label['textvariable'] = self.right_cnt
+        self.wrong_word_label['textvariable'] = self.wrong_cnt
+        self.countdown_label['textvariable'] = self.time_or_wpm
 
-    bank_index = cur_random_nums[cur_word]
+        self.right_cnt.set('right: {}'.format(self.right_words))
+        self.wrong_cnt.set('Inright: {}'.format(self.wrong_words))
+        self.time_or_wpm.set('Type to start!')
 
-    try:
-        if (ord(event.char) == 8):
-            
-            wrong_letter -= 1
-            cur_letter -= 1
-            
-            if (wrong_letter <= 0):
-                removeEffect('current_wrong')
-                addEffect('current_correct')
-                wrong_letter = 0
-                
-            if (cur_letter <= 0):
-                cur_letter = 0
-                
-            text.config(state=DISABLED)
-            return
-        
-        if (ord(event.char) == 32):
-            removeEffect('current_correct')
-            removeEffect('current_wrong')
+        self.entry.focus_set()
 
-            entry.delete(0, END)
-            
-            if wrong_letter == 0 and cur_letter >= len(wordbank[bank_index]):
-                addEffect('correct')
-                correct_words += 1
-                correct_word_amount.set('Correct: {}'.format(correct_words))
-                correct_chars += len(wordbank[bank_index])
-            else:
-                addEffect('wrong')
-                wrong_words += 1
-                wrong_word_amount.set('Incorrect: {}'.format(wrong_words))
-                wrong_chars += len(wordbank[bank_index])
-            
-            cur_letter = 0
-            wrong_letter = 0
-            
-            cur_char += len(wordbank[bank_index]) + 1
-            cur_word += 1
-            
-            if cur_word >= len(cur_random_nums): 
-                moveNextLine()
+        for i in range(0, self.num_words_display):
+            random_num = random.randint(0, len(self.wordbank)-1)
+            self.cur_rand_nums[i] = random_num
 
-            addEffect('current_correct')
-            text.config(state=DISABLED)
-            return
-        
-        if cur_letter < len(wordbank[bank_index]) and wordbank[bank_index][cur_letter] == event.char and wrong_letter == 0:
-            removeEffect('current_wrong')
-            addEffect('current_correct')
+            self.text.insert('end', self.wordbank[random_num] + ' ')
+
+        self.text.insert('end', '\n')
+
+        for i in range(0, self.num_words_display):
+            random_num = random.randint(0, len(self.wordbank)-1)
+            self.nxt_rand_nums[i] = random_num
+
+            self.text.insert('end', self.wordbank[random_num] + ' ')
+
+        self.addEffect('current_right')
+        self.text.config(state=DISABLED)
+
+        self.text.tag_config('current_right', background='gray')
+        self.text.tag_config('current_wrong', background='red')
+        self.text.tag_config('right', foreground='green')
+        self.text.tag_config('wrong', foreground='red')
+
+        self.text.pack()
+        self.entry.pack()
+        self.right_word_label.pack()
+        self.wrong_word_label.pack()
+        self.countdown_label.pack()
+
+        root.bind('<KeyPress>', self.onKeyPress)
+
+    def countdown(self, count):
+        self.time_or_wpm.set('{}'.format(count))
+
+        if count > 0:
+            self.after(1000, self.countdown, count-1)
         else:
-            removeEffect('current_correct')
-            addEffect('current_wrong')
-            wrong_letter += 1
+            wpm = int(self.right_chars // 5 * (60 / self.timer_limit))
+            self.time_or_wpm.set('WPM: {}'.format(wpm))
 
-        cur_letter += 1
-    except:
-        return
-    finally:
-        text.config(state=DISABLED)
+    def onKeyPress(self, event):
+        if self.entry != self.entry.focus_get():
+            return
 
-def addEffect(typeOf):
-    global cur_char
-    bank_index = cur_random_nums[cur_word] 
-    text.tag_add(typeOf, '1.{}'.format(cur_char), '1.{}'.format(cur_char + len(wordbank[bank_index])))
+        if not self.start_count:    # if test timer hasn't started, start it
+            self.start_count = True
+            self.countdown(self.timer_limit)
 
-def removeEffect(typeOf):
-    global cur_char
-    bank_index = cur_random_nums[cur_word]
-    text.tag_remove(typeOf, '1.{}'.format(cur_char), '1.{}'.format(cur_char + len(wordbank[bank_index])))
+        self.text.config(state=NORMAL)
 
-def moveNextLine():
-    global cur_char
-    global cur_word
-    global cur_random_nums
-    global next_random_nums
-    
-    cur_random_nums = list(next_random_nums)
-    
-    cur_word = 0
-    cur_char = 0
-    
-    text.delete('1.0', END)
-    
-    for i in range(0, num_words_display):
-        text.insert('end', wordbank[cur_random_nums[i]] + ' ')
-        
-    text.insert('end', '\n')
-    
-    for i in range(0, num_words_display):
-        random_num = random.randint(0, len(wordbank)-1)
-        next_random_nums[i] = random_num
-        
-        text.insert('end', wordbank[random_num] + ' ')
-        
+        bank_index = self.cur_rand_nums[self.cur_word]
+
+        try:
+            if ord(event.char) == 8:  # backspace
+
+                self.wrong_letter -= 1
+                self.cur_letter -= 1
+
+                if self.wrong_letter <= 0:
+                    self.removeEffect('current_wrong')
+                    self.addEffect('current_right')
+                    self.wrong_letter = 0
+
+                if self.cur_letter <= 0:
+                    self.cur_letter = 0
+
+                self.text.config(state=DISABLED)
+                return
+
+            if ord(event.char) == 32:     # space
+                self.removeEffect('current_right')
+                self.removeEffect('current_wrong')
+
+                self.entry.delete(0, END)
+
+                if (self.wrong_letter == 0 and
+                    self.cur_letter >= len(self.wordbank[bank_index])):
+                    self.addEffect('right')
+                    self.right_words += 1
+                    self.right_cnt.set('right: {}'.format(self.right_words))
+                    self.right_chars += len(self.wordbank[bank_index])
+                else:
+                    self.addEffect('wrong')
+                    self.wrong_words += 1
+                    self.wrong_cnt.set('Inright: {}'.format(self.wrong_words))
+                    self.wrong_chars += len(self.wordbank[bank_index])
+
+                self.cur_letter = 0
+                self.wrong_letter = 0
+
+                self.cur_char += len(self.wordbank[bank_index]) + 1
+                self.cur_word += 1
+
+                if self.cur_word >= len(self.cur_rand_nums):
+                    self.moveNextLine()
+
+                self.text.config(state=DISABLED)
+                self.addEffect('current_right')
+                return
+
+            if (self.cur_letter < len(self.wordbank[bank_index]) and
+                self.wordbank[bank_index][self.cur_letter] == event.char and
+                self.wrong_letter == 0):
+                self.removeEffect('current_wrong')
+                self.addEffect('current_right')
+            else:
+                self.removeEffect('current_right')
+                self.addEffect('current_wrong')
+                self.wrong_letter += 1
+
+            self.cur_letter += 1
+        except:
+            return
+        finally:
+            self.text.config(state=DISABLED)
+
+    def addEffect(self, typeOf):
+        bank_index = self.cur_rand_nums[self.cur_word]
+        self.text.tag_add(
+            typeOf,
+            '1.{}'.format(self.cur_char),
+            '1.{}'.format(self.cur_char + len(self.wordbank[bank_index])))
+
+    def removeEffect(self, typeOf):
+        bank_index = self.cur_rand_nums[self.cur_word]
+        self.text.tag_remove(
+            typeOf,
+            '1.{}'.format(self.cur_char),
+            '1.{}'.format(self.cur_char + len(self.wordbank[bank_index])))
+
+    def moveNextLine(self):
+        self.cur_rand_nums = list(self.nxt_rand_nums)
+
+        self.cur_word = 0
+        self.cur_char = 0
+
+        self.text.delete('1.0', END)
+
+        for i in range(0, self.num_words_display):
+            self.text.insert(
+                'end',
+                self.wordbank[self.cur_rand_nums[i]] + ' ')
+
+        self.text.insert('end', '\n')
+
+        for i in range(0, self.num_words_display):
+            random_num = random.randint(0, len(self.wordbank)-1)
+            self.nxt_rand_nums[i] = random_num
+
+            self.text.insert(
+                'end',
+                self.wordbank[random_num] + ' ')
+
 root = Tk()
-typing = StringVar()
-correct_word_amount = StringVar()
-wrong_word_amount = StringVar()
-time_or_wpm = StringVar()
 
-text = Text(root, width=50, height=2)
-entry = Entry(root, textvariable=typing, takefocus=0)
-correct_word_label = Label(root, foreground='green')
-wrong_word_label = Label(root, foreground='red')
-countdown_label = Label(root)
-
-correct_word_label['textvariable'] = correct_word_amount
-wrong_word_label['textvariable'] = wrong_word_amount
-countdown_label['textvariable'] = time_or_wpm
-
-correct_word_amount.set('Correct: {}'.format(correct_words))
-wrong_word_amount.set('Incorrect: {}'.format(wrong_words))
-time_or_wpm.set('Type to start!')
-
-entry.focus_set()
-
-for i in range(0, num_words_display):
-    random_num = random.randint(0, len(wordbank)-1)
-    cur_random_nums[i] = random_num
-    
-    text.insert('end', wordbank[random_num] + ' ')
-    
-text.insert('end', '\n')
-
-for i in range(0, num_words_display): 
-    random_num = random.randint(0, len(wordbank)-1)
-    next_random_nums[i] = random_num
-    
-    text.insert('end', wordbank[random_num] + ' ')
-
-addEffect('current_correct')
-text.config(state=DISABLED)
-
-text.tag_config('current_correct', background='gray')
-text.tag_config('current_wrong', background='red')
-text.tag_config('correct', foreground='green')
-text.tag_config('wrong', foreground='red')
-
-text.pack()
-entry.pack()
-correct_word_label.pack()
-wrong_word_label.pack()
-countdown_label.pack()
-              
-root.bind('<KeyPress>', onKeyPress)
+MyWindow(root).pack()
 
 root.mainloop()
-
