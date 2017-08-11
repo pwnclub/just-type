@@ -10,22 +10,13 @@ class just_type(Frame):
     def __init__(self, parent):
         super().__init__()
 
-        self.timer_limit = 60
+        self.timer_limit = 3
 
         self.wordbank = easy_words
         self.cur_rand_nums = []
         self.nxt_rand_nums = []
 
-        self.cur_char = 0
-        self.cur_letter = 0
-        self.wrong_letter = 0
-        self.cur_word = 0
-        self.right_words = 0
-        self.right_chars = 0
-        self.wrong_words = 0
-        self.wrong_chars = 0
-
-        self.start_count = False
+        self.reset_variables()
 
         self.init_ui()
 
@@ -35,11 +26,12 @@ class just_type(Frame):
         self.wrong_cnt = StringVar()
         self.time_or_wpm = StringVar()
 
-        self.text = Text(self, width=75, height=2, font=("Courier", 20))
-        self.entry = Entry(self, textvariable=self.typing, font=("Courier", 20), takefocus=0)
+        self.text = Text(self, font=("Arial", 20), width=63, height=2)
+        self.entry = Entry(self, textvariable=self.typing, font=("Arial", 20), takefocus=0)
         self.right_word_label = Label(self, foreground='green', font=("Courier", 15))
         self.wrong_word_label = Label(self, foreground='red', font=("Courier", 15))
         self.countdown_label = Label(self, font=("Courier", 15))
+        self.reset_button = Button(self, text='Reset', command=self.reset)
 
         self.right_word_label['textvariable'] = self.right_cnt
         self.wrong_word_label['textvariable'] = self.wrong_cnt
@@ -66,8 +58,32 @@ class just_type(Frame):
         self.right_word_label.pack()
         self.wrong_word_label.pack()
         self.countdown_label.pack()
+        self.reset_button.pack()
 
         root.bind('<KeyPress>', self.on_key_press)
+
+    def reset(self):
+        self.text.config(state=NORMAL)
+        self.move_next_line()
+        self.text.config(state=DISABLED)
+        self.entry.config(state=NORMAL)
+
+        self.reset_variables()
+
+        self.time_or_wpm.set('Type to start!')
+
+    def reset_variables(self):
+        self.cur_char = 0
+        self.cur_letter = 0
+        self.wrong_letter = 0
+        self.cur_word = 0
+        self.right_words = 0
+        self.right_chars = 0
+        self.wrong_words = 0
+        self.wrong_chars = 0
+
+        self.start_count = False
+        self.stop = False
 
     def init_rand_gen(self):
         total_chars = 0
@@ -110,10 +126,15 @@ class just_type(Frame):
             self.after(1000, self.countdown, count - 1)
         else:
             wpm = int(self.right_chars // 5 * (60 / self.timer_limit))
-            self.time_or_wpm.set('WPM: {}'.format(wpm))
+            # TODO: division by zero!
+            accuracy = round((self.right_chars / (self.right_chars + self.wrong_chars)) * 100, 2)
+            self.time_or_wpm.set('WPM: {}'.format(wpm) + '   ' + 'Accuracy: {}%'.format(accuracy))
+            self.entry.delete(0, END)
+            self.entry.config(state=DISABLED)
+            self.stop = True
 
     def on_key_press(self, event):
-        if self.entry != self.entry.focus_get():
+        if self.entry != self.entry.focus_get() or self.stop:
             return
 
         try:
@@ -216,7 +237,6 @@ class just_type(Frame):
 
         for i in range(0, len(self.cur_rand_nums)):
             self.text.insert('end', self.wordbank[self.cur_rand_nums[i]] + ' ')
-
         self.gen_nxt_line()
 
 root = Tk()
