@@ -10,7 +10,6 @@ class just_type(Frame):
     def __init__(self, parent):
         super().__init__()
 
-        self.num_words_display = 12
         self.timer_limit = 60
 
         self.wordbank = easy_words
@@ -36,11 +35,11 @@ class just_type(Frame):
         self.wrong_cnt = StringVar()
         self.time_or_wpm = StringVar()
 
-        self.text = Text(self, width=90, height=2)
-        self.entry = Entry(self, textvariable=self.typing, takefocus=0)
-        self.right_word_label = Label(self, foreground='green')
-        self.wrong_word_label = Label(self, foreground='red')
-        self.countdown_label = Label(self)
+        self.text = Text(self, width=75, height=2, font=("Courier", 20))
+        self.entry = Entry(self, textvariable=self.typing, font=("Courier", 20), takefocus=0)
+        self.right_word_label = Label(self, foreground='green', font=("Courier", 15))
+        self.wrong_word_label = Label(self, foreground='red', font=("Courier", 15))
+        self.countdown_label = Label(self, font=("Courier", 15))
 
         self.right_word_label['textvariable'] = self.right_cnt
         self.wrong_word_label['textvariable'] = self.wrong_cnt
@@ -71,30 +70,44 @@ class just_type(Frame):
         root.bind('<KeyPress>', self.on_key_press)
 
     def init_rand_gen(self):
-        for i in range(0, self.num_words_display):
-            random_num = random.randint(0, len(self.wordbank) - 1)
-            self.cur_rand_nums.append(random_num)
+        total_chars = 0
 
+        while True:
+            random_num = random.randint(0, len(self.wordbank) - 1)
+
+            if total_chars + len(self.wordbank[random_num]) + 1 > 75:
+                break
+
+            self.cur_rand_nums.append(random_num)
             self.text.insert('end', self.wordbank[random_num] + ' ')
+
+            total_chars += len(self.wordbank[random_num]) + 1
 
         self.gen_nxt_line()
 
     def gen_nxt_line(self):
         del self.nxt_rand_nums[:]
 
+        total_chars = 0
+
         self.text.insert('end', '\n')
 
-        for i in range(0, self.num_words_display):
+        while True:
             random_num = random.randint(0, len(self.wordbank) - 1)
-            self.nxt_rand_nums.append(random_num)
 
+            if total_chars + len(self.wordbank[random_num]) + 1 > 75:
+                break
+
+            self.nxt_rand_nums.append(random_num)
             self.text.insert('end', self.wordbank[random_num] + ' ')
+
+            total_chars += len(self.wordbank[random_num]) + 1
 
     def countdown(self, count):
         self.time_or_wpm.set('{}'.format(count))
 
         if count > 0:
-            self.after(1000, self.countdown, count-1)
+            self.after(1000, self.countdown, count - 1)
         else:
             wpm = int(self.right_chars // 5 * (60 / self.timer_limit))
             self.time_or_wpm.set('WPM: {}'.format(wpm))
@@ -168,12 +181,20 @@ class just_type(Frame):
             self.add_effect('right')
             self.right_words += 1
             self.right_cnt.set('Correct: {}'.format(self.right_words))
-            self.right_chars += len(self.wordbank[bank_index])
+            self.right_chars += len(self.wordbank[bank_index]) + 1
+
+            for letter in self.wordbank[bank_index]:
+                if letter.istitle():  # counts upper-case letters as two characters
+                    self.right_chars += 1
         else:
             self.add_effect('wrong')
             self.wrong_words += 1
             self.wrong_cnt.set('Incorrect: {}'.format(self.wrong_words))
-            self.wrong_chars += len(self.wordbank[bank_index])
+            self.wrong_chars += len(self.wordbank[bank_index]) + 1
+
+            for letter in self.wordbank[bank_index]:
+                if letter.istitle():
+                    self.wrong_chars += 1
 
         self.cur_letter = 0
         self.wrong_letter = 0
