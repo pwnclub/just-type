@@ -34,10 +34,10 @@ class JustType(Frame):
         self.right_word_label = Label(self, foreground='green', font=("Calibri", 15))
         self.wrong_word_label = Label(self, foreground='red', font=("Calibri", 15))
         self.countdown_label = Label(self, font=("Calibri", 15))
-        self.live_wpm_label = Label(self, font=("Calibri", 15))
-        self.reset_button = Button(self, text='Reset', command=self.reset)
-        self.radio_easy = Radiobutton(self, text='Easy', variable=self.test, value=0, command=self.change_test)
-        self.radio_advanced = Radiobutton(self, text='Advanced', variable=self.test, value=1, command=self.change_test)
+        self.live_wpm_label = Label(self, width=8, font=("System", 15))
+        self.reset_button = Button(self, text='Reset', font='System', padx=15, pady=5, background='red', foreground='white', command=self.reset)
+        self.radio_easy = Radiobutton(self, text='Easy', font='System', variable=self.test, value=0, command=self.change_test)
+        self.radio_advanced = Radiobutton(self, text='Advanced', font='System', variable=self.test, value=1, command=self.change_test)
 
         self.right_word_label['textvariable'] = self.right_cnt
         self.wrong_word_label['textvariable'] = self.wrong_cnt
@@ -64,13 +64,13 @@ class JustType(Frame):
 
         self.text.grid(column=0, row=0, columnspan=3)
         self.entry.grid(column=1 , row=1)
-        self.reset_button.grid(column=2 , row=1)
+        self.reset_button.grid(column=2 , row=1, pady=5)
         self.right_word_label.grid(column=1 , row=2)
         self.wrong_word_label.grid(column=1 , row=3)
         self.live_wpm_label.grid(column=2, row=3)
         self.countdown_label.grid(column=1 , row=4)
-        self.radio_easy.grid(column=0 , row=1)
-        self.radio_advanced.grid(column=0 , row=2)
+        self.radio_easy.grid(column=0 , row=1, sticky='w')
+        self.radio_advanced.grid(column=0 , row=2, sticky='w')
 
         root.bind('<KeyPress>', self.on_key_press)
 
@@ -184,6 +184,7 @@ class JustType(Frame):
 
             # space
             elif ord(event.char) == 32:
+                # stops quick skipping over words while holding space
                 if self.cur_letter == 0:
                     self.entry.delete(0, END)
                 else:
