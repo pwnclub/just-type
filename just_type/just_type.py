@@ -7,7 +7,7 @@ import os
 import math
 
 
-class just_type(Frame):
+class JustType(Frame):
     def __init__(self, parent):
         super().__init__()
 
@@ -28,8 +28,8 @@ class just_type(Frame):
         self.time_or_wpm = StringVar()
         self.tests = StringVar()
 
-        self.text = Text(self, font=("Arial", 20), width=65, height=2)
-        self.entry = Entry(self, textvariable=self.typing, font=("Arial", 20), takefocus=0)
+        self.text = Text(self, font=("Courier", 20), width=50, height=2)
+        self.entry = Entry(self, textvariable=self.typing, font=("Times New Roman", 20), takefocus=0)
         self.right_word_label = Label(self, foreground='green', font=("Courier", 15))
         self.wrong_word_label = Label(self, foreground='red', font=("Courier", 15))
         self.countdown_label = Label(self, font=("Courier", 15))
@@ -99,7 +99,7 @@ class just_type(Frame):
 
     def change_test(self, event):
         self.wordbank = words[self.test_options.current()]
-        #self.test_options.selection_clear()
+        # self.test_options.selection_clear()
         self.reset()
 
     def init_rand_gen(self):
@@ -110,7 +110,7 @@ class just_type(Frame):
         while True:
             random_num = random.randint(0, len(self.wordbank) - 1)
 
-            if total_chars + len(self.wordbank[random_num]) + 1 > 75:
+            if total_chars + len(self.wordbank[random_num]) + 1 > 50:
                 break
 
             self.cur_rand_nums.append(random_num)
@@ -129,7 +129,7 @@ class just_type(Frame):
         while True:
             random_num = random.randint(0, len(self.wordbank) - 1)
 
-            if total_chars + len(self.wordbank[random_num]) + 1 > 75:
+            if total_chars + len(self.wordbank[random_num]) + 1 > 50:
                 break
 
             self.nxt_rand_nums.append(random_num)
@@ -138,7 +138,7 @@ class just_type(Frame):
             total_chars += len(self.wordbank[random_num]) + 1
 
     def countdown(self, count):
-        if self.start_count == False:   # prevents two timers from running at once
+        if not self.start_count:   # prevents two timers from running at once
             return
 
         self.time_or_wpm.set('{}'.format(math.ceil(count)))
@@ -269,8 +269,7 @@ class just_type(Frame):
             self.text.insert('end', self.wordbank[self.cur_rand_nums[i]] + ' ')
         self.gen_nxt_line()
 
-root = Tk()
-
-just_type(root).pack()
-
-root.mainloop()
+if __name__ == "__main__":
+    root = Tk()
+    JustType(root).pack()
+    root.mainloop()
