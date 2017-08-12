@@ -1,18 +1,19 @@
 from tkinter import *
 from tkinter import ttk
-from dictionary import easy_words
+from dictionary import words
 import random
 import time
 import os
+import math
 
 
 class just_type(Frame):
     def __init__(self, parent):
         super().__init__()
 
-        self.timer_limit = 3
+        self.timer_limit = 30
 
-        self.wordbank = easy_words
+        self.wordbank = words[0]
         self.cur_rand_nums = []
         self.nxt_rand_nums = []
 
@@ -25,21 +26,27 @@ class just_type(Frame):
         self.right_cnt = StringVar()
         self.wrong_cnt = StringVar()
         self.time_or_wpm = StringVar()
+        self.tests = StringVar()
 
-        self.text = Text(self, font=("Arial", 20), width=63, height=2)
+        self.text = Text(self, font=("Arial", 20), width=65, height=2)
         self.entry = Entry(self, textvariable=self.typing, font=("Arial", 20), takefocus=0)
         self.right_word_label = Label(self, foreground='green', font=("Courier", 15))
         self.wrong_word_label = Label(self, foreground='red', font=("Courier", 15))
         self.countdown_label = Label(self, font=("Courier", 15))
         self.reset_button = Button(self, text='Reset', command=self.reset)
+        self.test_options = ttk.Combobox(self, state="readonly")
 
         self.right_word_label['textvariable'] = self.right_cnt
         self.wrong_word_label['textvariable'] = self.wrong_cnt
         self.countdown_label['textvariable'] = self.time_or_wpm
+        self.test_options['textvariable'] = self.tests
 
         self.right_cnt.set('Correct: {}'.format(self.right_words))
         self.wrong_cnt.set('Incorrect: {}'.format(self.wrong_words))
         self.time_or_wpm.set('Type to start!')
+        self.tests.set('Common')
+
+        self.test_options['values'] = ('Easy', 'Advanced')
 
         self.entry.focus_set()
 
@@ -59,17 +66,22 @@ class just_type(Frame):
         self.wrong_word_label.pack()
         self.countdown_label.pack()
         self.reset_button.pack()
+        self.test_options.pack()
 
         root.bind('<KeyPress>', self.on_key_press)
+        self.test_options.bind('<<ComboboxSelected>>', self.change_test)
 
     def reset(self):
         self.text.config(state=NORMAL)
-        self.move_next_line()
+        self.reset_variables()
+        self.init_rand_gen()
         self.text.config(state=DISABLED)
         self.entry.config(state=NORMAL)
+        self.entry.delete(0, END)
+        self.entry.focus_set()
 
-        self.reset_variables()
-
+        self.right_cnt.set('Correct: {}'.format(self.right_words))
+        self.wrong_cnt.set('Incorrect: {}'.format(self.wrong_words))
         self.time_or_wpm.set('Type to start!')
 
     def reset_variables(self):
@@ -85,7 +97,14 @@ class just_type(Frame):
         self.start_count = False
         self.stop = False
 
+    def change_test(self, event):
+        self.wordbank = words[self.test_options.current()]
+        #self.test_options.selection_clear()
+        self.reset()
+
     def init_rand_gen(self):
+        self.text.delete('1.0', END)
+        del self.cur_rand_nums[:]
         total_chars = 0
 
         while True:
@@ -103,7 +122,6 @@ class just_type(Frame):
 
     def gen_nxt_line(self):
         del self.nxt_rand_nums[:]
-
         total_chars = 0
 
         self.text.insert('end', '\n')
@@ -120,14 +138,23 @@ class just_type(Frame):
             total_chars += len(self.wordbank[random_num]) + 1
 
     def countdown(self, count):
-        self.time_or_wpm.set('{}'.format(count))
+        if self.start_count == False:   # prevents two timers from running at once
+            return
+
+        self.time_or_wpm.set('{}'.format(math.ceil(count)))
 
         if count > 0:
-            self.after(1000, self.countdown, count - 1)
+            self.after(100, self.countdown, count - 0.1)    # perhaps not the best way to do this- I'm running this function 10x more to prevent user from starting two timers up at once
         else:
-            wpm = int(self.right_chars // 5 * (60 / self.timer_limit))
-            # TODO: division by zero!
-            accuracy = round((self.right_chars / (self.right_chars + self.wrong_chars)) * 100, 2)
+            wpm = int(self.right_chars * (60 / self.timer_limit) // 5)
+
+            total_chars = (self.right_chars + self.wrong_chars)
+
+            if total_chars == 0:
+                accuracy = 0.00
+            else:
+                accuracy = round((self.right_chars / total_chars) * 100, 2)
+
             self.time_or_wpm.set('WPM: {}'.format(wpm) + '   ' + 'Accuracy: {}%'.format(accuracy))
             self.entry.delete(0, END)
             self.entry.config(state=DISABLED)
@@ -144,7 +171,10 @@ class just_type(Frame):
                 self.remove_char()
 
             elif ord(event.char) == 32:     # space
-                self.move_next_word()
+                if self.cur_letter == 0:
+                    self.entry.delete(0, END)
+                else:
+                    self.move_next_word()
 
             elif (event.char).isalpha():
                 if not self.start_count:    # if test timer hasn't started, start it
