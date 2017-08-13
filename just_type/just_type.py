@@ -62,6 +62,7 @@ class TestArea(tk.Frame):
         self.reset_button = tk.Button(self, text='Reset', font='System', padx=15, pady=5, background='red', foreground='white', command=self.reset)
         self.radio_easy = tk.Radiobutton(self, text='Easy', font='System', variable=self.test, value=0, command=self.change_test)
         self.radio_advanced = tk.Radiobutton(self, text='Advanced', font='System', variable=self.test, value=1, command=self.change_test)
+        self.radio_nums = tk.Radiobutton(self, text='Numbers', font='System', variable=self.test, value=2, command=self.change_test)
         self.open_hs_button = tk.Button(self, text='High Scores', command=lambda: [self.reset(), controller.show_frame(HighScores)])
 
         self.right_word_label['textvariable'] = self.right_cnt
@@ -89,13 +90,14 @@ class TestArea(tk.Frame):
         self.text.grid(column=0, row=0, columnspan=3)
         self.entry.grid(column=1 , row=1)
         self.reset_button.grid(column=2 , row=1, pady=5)
-        self.right_word_label.grid(column=1 , row=2)
-        self.wrong_word_label.grid(column=1 , row=3)
+        self.right_word_label.grid(column=1 , row=2, pady=5)
+        self.wrong_word_label.grid(column=1 , row=3, pady=5)
         self.live_wpm_label.grid(column=2, row=3)
         self.countdown_label.grid(column=1 , row=4)
         self.radio_easy.grid(column=0 , row=1, sticky='w')
-        self.radio_advanced.grid(column=0 , row=2, sticky='w')
-        self.open_hs_button.grid(column=0, row=3)
+        self.radio_advanced.grid(column=0, row=2, sticky='w')
+        self.radio_nums.grid(column=0, row=3, sticky='w')
+        self.open_hs_button.grid(column=0, row=4)
 
         controller.bind('<KeyPress>', self.on_key_press)
 
@@ -111,7 +113,11 @@ class TestArea(tk.Frame):
         self.right_cnt.set('Correct: {}'.format(self.right_words))
         self.wrong_cnt.set('Incorrect: {}'.format(self.wrong_words))
         self.time_or_wpm.set('Type to start!')
-        self.live_wpm.set('{} WPM'.format(self.cur_wpm))
+
+        if self.test.get() == 2:
+            self.live_wpm.set('{} CPM'.format(self.cur_cpm))
+        else:
+            self.live_wpm.set('{} WPM'.format(self.cur_wpm))
 
     def reset_variables(self):
         self.cur_char = 0
@@ -123,6 +129,7 @@ class TestArea(tk.Frame):
         self.wrong_words = 0
         self.wrong_chars = 0
         self.cur_wpm = 0
+        self.cur_cpm = 0
 
         self.start_count = False
         self.stop = False
@@ -180,9 +187,16 @@ class TestArea(tk.Frame):
             if count != self.timer_limit:
                 self.cur_wpm = int(self.right_chars * (60 / (self.timer_limit - count)) // 5)
 
-            self.live_wpm.set('{} WPM'.format(self.cur_wpm))
+                if self.test.get() == 2:
+                    self.cur_cpm =  int(self.right_chars * (60/ (self.timer_limit - count)))
+
+            if self.test.get() == 2: 
+                self.live_wpm.set('{} CPM'.format(self.cur_cpm))
+            else:
+                self.live_wpm.set('{} WPM'.format(self.cur_wpm))
         else:
             wpm = int(self.right_chars * (60 / self.timer_limit) // 5)
+            cpm = int(self.right_chars * (60 / self.timer_limit))
 
             total_chars = (self.right_chars + self.wrong_chars)
 
@@ -191,7 +205,10 @@ class TestArea(tk.Frame):
             else:
                 accuracy = round((self.right_chars / total_chars) * 100, 2)
 
-            self.time_or_wpm.set('WPM: {}'.format(wpm) + '   ' + 'Accuracy: {}%'.format(accuracy))
+            if self.test.get() == 2:
+                self.time_or_wpm.set('CPM: {}'.format(cpm) + '   ' + 'Accuracy: {}%'.format(accuracy))
+            else:
+                self.time_or_wpm.set('WPM: {}'.format(wpm) + '   ' + 'Accuracy: {}%'.format(accuracy))
             self.entry.delete(0, tk.END)
             self.entry.config(state=tk.DISABLED)
             self.stop = True
@@ -215,12 +232,16 @@ class TestArea(tk.Frame):
                 else:
                     self.move_next_word()
 
-            elif (event.char).isalpha():
+            elif (event.char).isalpha() or (event.char).isdigit():
                 # if test timer hasn't started, start it
                 if not self.start_count:
                     self.start_count = True
                     self.countdown(self.timer_limit)
                 self.add_char(event.char)
+
+                # if doing the num pad test, automatically move to next number
+                if self.test.get() == 2:
+                    self.move_next_word()
 
             self.text.config(state=tk.DISABLED)
         except:
@@ -280,6 +301,13 @@ class TestArea(tk.Frame):
         else:
             self.add_effect('wrong')
             self.wrong_words += 1
+
+            # prevents spamming
+            # this is especially true in the number test, as holding down any key would lead to 400+ CPM
+            if self.wrong_words > self.timer_limit * 5:
+                self.entry.config(state=tk.DISABLED)
+                self.stop = True
+
             self.wrong_cnt.set('Incorrect: {}'.format(self.wrong_words))
             self.wrong_chars += len(self.wordbank[bank_index]) + 1
 
@@ -313,8 +341,10 @@ class TestArea(tk.Frame):
 class HighScores(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
-        button1 = tk.Button(self, text="Back to Testing Area", command=lambda: controller.show_frame(TestArea))
-        button1.grid(row=0, column=0)
+        self.text = tk.Text(self, font=("Courier", 20), width=50, height=2)
+        self.button1 = tk.Button(self, text="Back to Testing Area", command=lambda: controller.show_frame(TestArea))
+        self.text.grid(column=0, row=0, columnspan=3)
+        self.button1.grid(row=1, column=1, sticky="nsew")
 
 if __name__ == "__main__":      
     root = JustType()
