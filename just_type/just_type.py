@@ -41,9 +41,6 @@ class TestArea(tk.Frame):
         self.cur_rand_nums = []
         self.nxt_rand_nums = []
 
-        self.button1 = tk.Button(self, text='Page 1', command=lambda: [self.reset(), controller.show_frame(HighScores)]) ###
-        self.button1.grid(column=0, row=3)
-
         self.reset_variables()
 
         self.init_ui(parent, controller)
@@ -65,6 +62,7 @@ class TestArea(tk.Frame):
         self.reset_button = tk.Button(self, text='Reset', font='System', padx=15, pady=5, background='red', foreground='white', command=self.reset)
         self.radio_easy = tk.Radiobutton(self, text='Easy', font='System', variable=self.test, value=0, command=self.change_test)
         self.radio_advanced = tk.Radiobutton(self, text='Advanced', font='System', variable=self.test, value=1, command=self.change_test)
+        self.open_hs_button = tk.Button(self, text='High Scores', command=lambda: [self.reset(), controller.show_frame(HighScores)])
 
         self.right_word_label['textvariable'] = self.right_cnt
         self.wrong_word_label['textvariable'] = self.wrong_cnt
@@ -97,8 +95,9 @@ class TestArea(tk.Frame):
         self.countdown_label.grid(column=1 , row=4)
         self.radio_easy.grid(column=0 , row=1, sticky='w')
         self.radio_advanced.grid(column=0 , row=2, sticky='w')
+        self.open_hs_button.grid(column=0, row=3)
 
-        self.entry.bind('<KeyPress>', self.on_key_press)
+        controller.bind('<KeyPress>', self.on_key_press)
 
     def reset(self):
         self.text.config(state=tk.NORMAL)
@@ -211,7 +210,6 @@ class TestArea(tk.Frame):
             # space
             elif ord(event.char) == 32:
                 # stops quick skipping over words while holding space
-                print(self.cur_letter)
                 if self.cur_letter == 0:
                     self.entry.delete(0, tk.END)
                 else:
@@ -267,7 +265,7 @@ class TestArea(tk.Frame):
         self.remove_effect('current_right')
         self.remove_effect('current_wrong')
 
-        self.entry.delete(0, tk.END)
+        self.typing.set('')
 
         if self.wrong_letter == 0 and self.cur_letter >= len(self.wordbank[bank_index]):
             self.add_effect('right')
