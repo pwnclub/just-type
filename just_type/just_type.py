@@ -1,15 +1,39 @@
-from tkinter import *
-from tkinter import ttk
+import tkinter as tk
 from dictionary import words
 import random
 import time
 import os
 import math
 
+class JustType(tk.Tk):
+    def __init__(self, *args, **kwargs):
+        tk.Tk.__init__(self, *args, **kwargs)
+        container = tk.Frame(self)
 
-class JustType(Frame):
-    def __init__(self, parent):
-        super().__init__()
+        container.pack()
+
+        container.grid_rowconfigure(0, weight=1)
+        container.grid_columnconfigure(0, weight=1)
+
+        self.frames = {}
+
+        for Page in (TestArea, HighScores):
+            frame = Page(container, self)
+            frame.grid(row=0, column=0, sticky="nsew")
+
+            self.frames[Page] = frame
+
+        self.show_frame(TestArea)
+
+    def show_frame(self, tab):
+
+        frame = self.frames[tab]
+        frame.tkraise()
+
+        
+class TestArea(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)  
 
         self.timer_limit = 30
 
@@ -17,27 +41,30 @@ class JustType(Frame):
         self.cur_rand_nums = []
         self.nxt_rand_nums = []
 
+        self.button1 = tk.Button(self, text='Page 1', command=lambda: [self.reset(), controller.show_frame(HighScores)]) ###
+        self.button1.grid(column=0, row=3)
+
         self.reset_variables()
 
-        self.init_ui()
+        self.init_ui(parent, controller)
 
-    def init_ui(self):
-        self.typing = StringVar()
-        self.right_cnt = StringVar()
-        self.wrong_cnt = StringVar()
-        self.time_or_wpm = StringVar()
-        self.live_wpm = StringVar()
-        self.test = IntVar()
+    def init_ui(self, parent, controller):
+        self.typing = tk.StringVar()
+        self.right_cnt = tk.StringVar()
+        self.wrong_cnt = tk.StringVar()
+        self.time_or_wpm = tk.StringVar()
+        self.live_wpm = tk.StringVar()
+        self.test = tk.IntVar()
 
-        self.text = Text(self, font=("Courier", 20), width=50, height=2)
-        self.entry = Entry(self, textvariable=self.typing, font=("Courier", 20), takefocus=0)
-        self.right_word_label = Label(self, foreground='green', font=("Calibri", 15))
-        self.wrong_word_label = Label(self, foreground='red', font=("Calibri", 15))
-        self.countdown_label = Label(self, font=("Calibri", 15))
-        self.live_wpm_label = Label(self, width=8, font=("System", 15))
-        self.reset_button = Button(self, text='Reset', font='System', padx=15, pady=5, background='red', foreground='white', command=self.reset)
-        self.radio_easy = Radiobutton(self, text='Easy', font='System', variable=self.test, value=0, command=self.change_test)
-        self.radio_advanced = Radiobutton(self, text='Advanced', font='System', variable=self.test, value=1, command=self.change_test)
+        self.text = tk.Text(self, font=("Courier", 20), width=50, height=2)
+        self.entry = tk.Entry(self, textvariable=self.typing, font=("Courier", 20), takefocus=0)
+        self.right_word_label = tk.Label(self, foreground='green', font=("Calibri", 15))
+        self.wrong_word_label = tk.Label(self, foreground='red', font=("Calibri", 15))
+        self.countdown_label = tk.Label(self, font=("Calibri", 15))
+        self.live_wpm_label = tk.Label(self, width=8, font=("System", 15))
+        self.reset_button = tk.Button(self, text='Reset', font='System', padx=15, pady=5, background='red', foreground='white', command=self.reset)
+        self.radio_easy = tk.Radiobutton(self, text='Easy', font='System', variable=self.test, value=0, command=self.change_test)
+        self.radio_advanced = tk.Radiobutton(self, text='Advanced', font='System', variable=self.test, value=1, command=self.change_test)
 
         self.right_word_label['textvariable'] = self.right_cnt
         self.wrong_word_label['textvariable'] = self.wrong_cnt
@@ -47,7 +74,6 @@ class JustType(Frame):
         self.right_cnt.set('Correct: {}'.format(self.right_words))
         self.wrong_cnt.set('Incorrect: {}'.format(self.wrong_words))
         self.time_or_wpm.set('Type to start!')
-        # TODO: fix live_wpm to not mess with the grid when it changes number of digits
         self.live_wpm.set('{} WPM'.format(self.cur_wpm))
 
         self.entry.focus_set()
@@ -55,7 +81,7 @@ class JustType(Frame):
         self.init_rand_gen()
 
         self.add_effect('current_right')
-        self.text.config(state=DISABLED)
+        self.text.config(state=tk.DISABLED)
 
         self.text.tag_config('current_right', background='gray')
         self.text.tag_config('current_wrong', background='red')
@@ -72,15 +98,15 @@ class JustType(Frame):
         self.radio_easy.grid(column=0 , row=1, sticky='w')
         self.radio_advanced.grid(column=0 , row=2, sticky='w')
 
-        root.bind('<KeyPress>', self.on_key_press)
+        self.entry.bind('<KeyPress>', self.on_key_press)
 
     def reset(self):
-        self.text.config(state=NORMAL)
+        self.text.config(state=tk.NORMAL)
         self.reset_variables()
         self.init_rand_gen()
-        self.text.config(state=DISABLED)
-        self.entry.config(state=NORMAL)
-        self.entry.delete(0, END)
+        self.text.config(state=tk.DISABLED)
+        self.entry.config(state=tk.NORMAL)
+        self.entry.delete(0, tk.END)
         self.entry.focus_set()
 
         self.right_cnt.set('Correct: {}'.format(self.right_words))
@@ -107,7 +133,7 @@ class JustType(Frame):
         self.reset()
 
     def init_rand_gen(self):
-        self.text.delete('1.0', END)
+        self.text.delete('1.0', tk.END)
         del self.cur_rand_nums[:]
         total_chars = 0
 
@@ -167,8 +193,8 @@ class JustType(Frame):
                 accuracy = round((self.right_chars / total_chars) * 100, 2)
 
             self.time_or_wpm.set('WPM: {}'.format(wpm) + '   ' + 'Accuracy: {}%'.format(accuracy))
-            self.entry.delete(0, END)
-            self.entry.config(state=DISABLED)
+            self.entry.delete(0, tk.END)
+            self.entry.config(state=tk.DISABLED)
             self.stop = True
 
     def on_key_press(self, event):
@@ -176,7 +202,7 @@ class JustType(Frame):
             return
 
         try:
-            self.text.config(state=NORMAL)
+            self.text.config(state=tk.NORMAL)
 
             # backspace
             if ord(event.char) == 8:
@@ -185,8 +211,9 @@ class JustType(Frame):
             # space
             elif ord(event.char) == 32:
                 # stops quick skipping over words while holding space
+                print(self.cur_letter)
                 if self.cur_letter == 0:
-                    self.entry.delete(0, END)
+                    self.entry.delete(0, tk.END)
                 else:
                     self.move_next_word()
 
@@ -197,7 +224,7 @@ class JustType(Frame):
                     self.countdown(self.timer_limit)
                 self.add_char(event.char)
 
-            self.text.config(state=DISABLED)
+            self.text.config(state=tk.DISABLED)
         except:
             return
 
@@ -240,7 +267,7 @@ class JustType(Frame):
         self.remove_effect('current_right')
         self.remove_effect('current_wrong')
 
-        self.entry.delete(0, END)
+        self.entry.delete(0, tk.END)
 
         if self.wrong_letter == 0 and self.cur_letter >= len(self.wordbank[bank_index]):
             self.add_effect('right')
@@ -278,13 +305,20 @@ class JustType(Frame):
         self.cur_word = 0
         self.cur_char = 0
 
-        self.text.delete('1.0', END)
+        self.text.delete('1.0', tk.END)
 
         for i in range(0, len(self.cur_rand_nums)):
             self.text.insert('end', self.wordbank[self.cur_rand_nums[i]] + ' ')
         self.gen_nxt_line()
 
-if __name__ == "__main__":
-    root = Tk()
-    JustType(root).pack()
+
+class HighScores(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+        button1 = tk.Button(self, text="Back to Testing Area", command=lambda: controller.show_frame(TestArea))
+        button1.grid(row=0, column=0)
+
+if __name__ == "__main__":      
+    root = JustType()
+    root.resizable(width=False, height=False)
     root.mainloop()
