@@ -1,9 +1,11 @@
 import tkinter as tk
 from dictionary import words
+from operator import itemgetter
 import random
 import time
 import os
 import math
+import shelve
 
 class JustType(tk.Tk):
     def __init__(self, *args, **kwargs):
@@ -27,9 +29,10 @@ class JustType(tk.Tk):
 
     def show_frame(self, tab):
 
+        for frame in self.frames.values():
+            frame.grid_remove()
         frame = self.frames[tab]
-        frame.tkraise()
-
+        frame.grid()
         
 class TestArea(tk.Frame):
     def __init__(self, parent, controller):
@@ -209,6 +212,13 @@ class TestArea(tk.Frame):
                 self.time_or_wpm.set('CPM: {}'.format(cpm) + '   ' + 'Accuracy: {}%'.format(accuracy))
             else:
                 self.time_or_wpm.set('WPM: {}'.format(wpm) + '   ' + 'Accuracy: {}%'.format(accuracy))
+
+            highscores = shelve.open('highscores', writeback=True)
+            highscores['easy'].append(wpm)
+            highscores['easy'] = sorted(highscores['easy'], reverse=True)[:10]
+            highscores.sync()
+            highscores.close()
+
             self.entry.delete(0, tk.END)
             self.entry.config(state=tk.DISABLED)
             self.stop = True
@@ -341,9 +351,22 @@ class TestArea(tk.Frame):
 class HighScores(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
-        self.text = tk.Text(self, font=("Courier", 20), width=50, height=2)
+        self.highscores_list = tk.StringVar()
+
+        self.highscores_label = tk.Label(self, width=40)
         self.button1 = tk.Button(self, text="Back to Testing Area", command=lambda: controller.show_frame(TestArea))
-        self.text.grid(column=0, row=0, columnspan=3)
+
+        self.highscores_label['textvariable'] = self.highscores_list
+
+        highscores = shelve.open('highscores')
+        string = ''
+        for score in highscores['easy']:
+            string += str(score) + '\n'
+
+        self.highscores_list.set(string)
+        highscores.close()
+
+        self.highscores_label.grid(row=0, column=0, columnspan=3)
         self.button1.grid(row=1, column=1, sticky="nsew")
 
 if __name__ == "__main__":      
