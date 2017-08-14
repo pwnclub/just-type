@@ -40,7 +40,7 @@ class TestArea(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)  
 
-        self.timer_limit = 3
+        self.timer_limit = 30
 
         self.wordbank = words[0]
         self.cur_rand_nums = []
@@ -227,9 +227,9 @@ class TestArea(tk.Frame):
                 test_id = 'nums'
 
             if(test_id != 'nums'):
-                highscores[test_id].append([wpm, time.strftime("%d/%m/%Y")])
+                highscores[test_id].append([wpm, '{}%'.format(accuracy), time.strftime("%d/%m/%Y")])
             else:
-                highscores[test_id].append([cpm, time.strftime("%d/%m/%Y")])
+                highscores[test_id].append([cpm, '{}%'.format(accuracy), time.strftime("%d/%m/%Y")])
 
             highscores[test_id] = sorted(highscores[test_id], reverse=True)[:10]
             highscores.sync()
@@ -403,7 +403,7 @@ class HighScores(tk.Frame):
                 string += ' WPM '
             else:
                 string += ' CPM '
-            string += '\t' + str(highscores[test_id][i-1][1]) + '\n'
+            string += '\t' + str(highscores[test_id][i-1][1]) + '\t' + str(highscores[test_id][i-1][2]) + '\n'
 
         self.highscores_list.set(string)
 
@@ -419,7 +419,7 @@ class HighScores(tk.Frame):
         elif(self.test.get() == 2):
             test_id = 'nums'
 
-        highscores[test_id] = [[0, time.strftime("%d/%m/%Y")]] * 10
+        highscores[test_id] = [[0, '0.00%', time.strftime("%d/%m/%Y")]] * 10
         highscores.sync()
         highscores.close()
         self.update()
