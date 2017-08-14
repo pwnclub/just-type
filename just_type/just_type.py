@@ -33,6 +33,8 @@ class JustType(tk.Tk):
             frame.grid_remove()
         frame = self.frames[tab]
         frame.grid()
+        if tab == HighScores:
+            frame.update()
         
 class TestArea(tk.Frame):
     def __init__(self, parent, controller):
@@ -214,8 +216,22 @@ class TestArea(tk.Frame):
                 self.time_or_wpm.set('WPM: {}'.format(wpm) + '   ' + 'Accuracy: {}%'.format(accuracy))
 
             highscores = shelve.open('highscores', writeback=True)
-            highscores['easy'].append(wpm)
-            highscores['easy'] = sorted(highscores['easy'], reverse=True)[:10]
+
+            test_id = ''
+
+            if(self.test.get() == 0):
+                test_id = 'easy'
+            elif(self.test.get() == 1):
+                test_id = 'advanced'
+            elif(self.test.get() == 2):
+                test_id = 'nums'
+
+            if(test_id != 'nums'):
+                highscores[test_id].append(wpm)
+            else:
+                highscores[test_id].append(cpm)
+                
+            highscores[test_id] = sorted(highscores[test_id], reverse=True)[:10]
             highscores.sync()
             highscores.close()
 
@@ -352,22 +368,64 @@ class HighScores(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
         self.highscores_list = tk.StringVar()
+        self.test = tk.IntVar()
 
-        self.highscores_label = tk.Label(self, width=40)
-        self.button1 = tk.Button(self, text="Back to Testing Area", command=lambda: controller.show_frame(TestArea))
+        self.highscores_label = tk.Label(self, justify="left", width=30)
+        self.return_button = tk.Button(self, text="Back to Testing Area", command=lambda: controller.show_frame(TestArea))
+        self.reset_scores_button = tk.Button(self, text="RESET", command=self.reset_scores)
+        self.radio_easy = tk.Radiobutton(self, text='Easy', font='System', command=self.update, variable=self.test, value=0)
+        self.radio_advanced = tk.Radiobutton(self, text='Advanced', font='System', command=self.update, variable=self.test, value=1)
+        self.radio_nums = tk.Radiobutton(self, text='Numbers', font='System', command=self.update, variable=self.test, value=2)
 
         self.highscores_label['textvariable'] = self.highscores_list
 
+        self.highscores_label.grid(column=1, row=0, columnspan=2, rowspan=4)
+        self.return_button.grid(column=0, row=4)
+        self.reset_scores_button.grid(column=1, row=4)
+        self.radio_easy.grid(column=0 , row=0, sticky='w')
+        self.radio_advanced.grid(column=0, row=1, sticky='w')
+        self.radio_nums.grid(column=0, row=2, sticky='w')
+
+    def update(self):
+        print('here')
         highscores = shelve.open('highscores')
         string = ''
-        for score in highscores['easy']:
-            string += str(score) + '\n'
+
+        if(self.test.get() == 0):
+            test_id = 'easy'
+        elif(self.test.get() == 1):
+            test_id = 'advanced'
+        elif(self.test.get() == 2):
+            test_id = 'nums'
+
+        for i in range (1, 11):
+            string += str(i) + '. ' + str(highscores[test_id][i-1])
+            if(test_id != 'nums'):
+                string += ' WPM\n'
+            else:
+                string += ' CPM\n'
+
+        print(string)
 
         self.highscores_list.set(string)
+
         highscores.close()
 
-        self.highscores_label.grid(row=0, column=0, columnspan=3)
-        self.button1.grid(row=1, column=1, sticky="nsew")
+    def reset_scores(self):
+        print('here')
+        highscores = shelve.open('highscores')
+
+        if(self.test.get() == 0):
+            test_id = 'easy'
+        elif(self.test.get() == 1):
+            test_id = 'advanced'
+        elif(self.test.get() == 2):
+            test_id = 'nums'
+
+        highscores[test_id] = [0] * 10
+        highscores.sync()
+        highscores.close()
+        self.update()
 
 if __name__ == "__main__":      
     root = JustType()
