@@ -1,5 +1,6 @@
 import tkinter as tk
 from dictionary import words
+from custom_default import custom_text
 from operator import itemgetter
 import random
 import time
@@ -19,7 +20,7 @@ class JustType(tk.Tk):
 
         self.frames = {}
 
-        for Page in (TestArea, HighScores):
+        for Page in (TestArea, HighScores, SubmitCustom):
             frame = Page(container, self)
             frame.grid(row=0, column=0, sticky="nsew")
 
@@ -68,7 +69,9 @@ class TestArea(tk.Frame):
         self.radio_easy = tk.Radiobutton(self, text='Easy', font='System', variable=self.test, value=0, command=self.change_test)
         self.radio_advanced = tk.Radiobutton(self, text='Advanced', font='System', variable=self.test, value=1, command=self.change_test)
         self.radio_nums = tk.Radiobutton(self, text='Numbers', font='System', variable=self.test, value=2, command=self.change_test)
+        self.radio_custom = tk.Radiobutton(self, text='Custom', font='System', variable=self.test, value=3, command=self.change_test)
         self.open_hs_button = tk.Button(self, text='High Scores', command=lambda: [self.reset(), controller.show_frame(HighScores)])
+        self.open_custom_button = tk.Button(self, text='Custom Test', command=lambda: [self.reset(), controller.show_frame(SubmitCustom)])
 
         self.right_word_label['textvariable'] = self.right_cnt
         self.wrong_word_label['textvariable'] = self.wrong_cnt
@@ -97,19 +100,26 @@ class TestArea(tk.Frame):
         self.reset_button.grid(column=2 , row=1, pady=5)
         self.right_word_label.grid(column=1 , row=2, pady=5)
         self.wrong_word_label.grid(column=1 , row=3, pady=5)
-        self.live_wpm_label.grid(column=2, row=3)
+        self.live_wpm_label.grid(column=2, row=2)
         self.countdown_label.grid(column=1 , row=4)
         self.radio_easy.grid(column=0 , row=1, sticky='w')
         self.radio_advanced.grid(column=0, row=2, sticky='w')
         self.radio_nums.grid(column=0, row=3, sticky='w')
-        self.open_hs_button.grid(column=0, row=4)
+        self.radio_custom.grid(column=0, row=4, sticky='w')
+        self.open_hs_button.grid(column=2, row=3)
+        self.open_custom_button.grid(column=2, row=4)
 
         controller.bind('<KeyPress>', self.on_key_press)
 
     def reset(self):
         self.text.config(state=tk.NORMAL)
         self.reset_variables()
-        self.init_rand_gen()
+
+        if self.test.get() != 3:
+            self.init_rand_gen()
+        else:
+            self.init_rand_gen_custom()
+
         self.text.config(state=tk.DISABLED)
         self.entry.config(state=tk.NORMAL)
         self.entry.delete(0, tk.END)
@@ -136,11 +146,18 @@ class TestArea(tk.Frame):
         self.cur_wpm = 0
         self.cur_cpm = 0
 
+        self.cur_index = 0
+
         self.start_count = False
         self.stop = False
 
     def change_test(self):
-        self.wordbank = words[self.test.get()]
+        if(self.test.get() != 3):
+            self.wordbank = words[self.test.get()]
+        else:
+            custom_test = shelve.open('custom')
+            self.wordbank = custom_test['sample']
+            custom_test.close()
         self.reset()
 
     def init_rand_gen(self):
@@ -161,6 +178,22 @@ class TestArea(tk.Frame):
 
         self.gen_nxt_line()
 
+    def init_rand_gen_custom(self):
+        self.text.delete('1.0', tk.END)
+        del self.cur_rand_nums[:]
+        total_chars = 0
+
+        for i in range(0, len(self.wordbank)):
+            if total_chars + len(self.wordbank[i]) + 1 > 50:
+                self.cur_index = i
+                self.gen_nxt_line_custom(i)
+                break
+
+            self.cur_rand_nums.append(i)
+            self.text.insert('end', self.wordbank[i] + ' ')
+
+            total_chars += len(self.wordbank[i]) + 1
+
     def gen_nxt_line(self):
         del self.nxt_rand_nums[:]
         total_chars = 0
@@ -177,6 +210,25 @@ class TestArea(tk.Frame):
             self.text.insert('end', self.wordbank[random_num] + ' ')
 
             total_chars += len(self.wordbank[random_num]) + 1
+
+    def gen_nxt_line_custom(self, start):
+        del self.nxt_rand_nums[:]
+        total_chars = 0
+
+        self.text.insert('end', '\n')
+
+        for i in range(start, len(self.wordbank)):
+
+            if total_chars + len(self.wordbank[i]) + 1 > 50:
+                self.cur_index += i - start
+                return
+
+            self.nxt_rand_nums.append(i)
+            self.text.insert('end', self.wordbank[i] + ' ')
+
+            total_chars += len(self.wordbank[i]) + 1
+
+        self.cur_index = len(self.wordbank)
 
     def countdown(self, count):
         # prevents two timers from running at once
@@ -239,6 +291,35 @@ class TestArea(tk.Frame):
             self.entry.config(state=tk.DISABLED)
             self.stop = True
 
+    def countup(self, count):
+        if not self.start_count:
+            return
+
+        if not self.stop:
+            self.time_or_wpm.set('{}'.format(math.ceil(count)))
+
+            self.after(100, self.countup, count + 0.1)
+
+            if count != 0:
+                self.cur_wpm = int(self.right_chars * (60 / (count)) // 5)
+
+                self.live_wpm.set('{} WPM'.format(self.cur_wpm))
+
+        if(self.right_words + self.wrong_words >= len(self.wordbank)):
+            wpm = int(self.right_chars * (60 / count) // 5)
+            total_chars = (self.right_chars + self.wrong_chars)
+
+            if total_chars == 0:
+                accuracy = 0.00
+            else:
+                accuracy = round((self.right_chars / total_chars) * 100, 2)
+
+            self.time_or_wpm.set('WPM: {}'.format(wpm) + '   ' + 'Accuracy: {}%'.format(accuracy))
+
+            self.entry.delete(0, tk.END)
+            self.entry.config(state=tk.DISABLED)
+            self.stop = True
+
     def on_key_press(self, event):
         if self.entry != self.entry.focus_get() or self.stop:
             return
@@ -258,11 +339,14 @@ class TestArea(tk.Frame):
                 else:
                     self.move_next_word()
 
-            elif (event.char).isalpha() or (event.char).isdigit():
+            else:
                 # if test timer hasn't started, start it
                 if not self.start_count:
                     self.start_count = True
-                    self.countdown(self.timer_limit)
+                    if self.test.get() != 3:
+                        self.countdown(self.timer_limit)
+                    else:
+                        self.countup(0)
                 self.add_char(event.char)
 
                 # if doing the num pad test, automatically move to next number
@@ -361,8 +445,12 @@ class TestArea(tk.Frame):
 
         for i in range(0, len(self.cur_rand_nums)):
             self.text.insert('end', self.wordbank[self.cur_rand_nums[i]] + ' ')
-        self.gen_nxt_line()
 
+        if self.test.get() != 3:
+            self.gen_nxt_line()
+        elif self.cur_index < len(self.wordbank)-1:
+            
+            self.gen_nxt_line_custom(self.cur_index)
 
 class HighScores(tk.Frame):
     def __init__(self, parent, controller):
@@ -423,6 +511,49 @@ class HighScores(tk.Frame):
         highscores.sync()
         highscores.close()
         self.update()
+
+class SubmitCustom(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+        self.controller = controller
+
+        self.new_test = tk.Text(self, height=8, width=50)
+        self.submit_button = tk.Button(self, text="Submit!", command=self.submit_commands)
+        self.reset_default_button = tk.Button(self, text="Default Text", command=self.reset_default)
+        self.clear_button = tk.Button(self, text="Clear Text", command=self.empty_input)
+        self.test_area_button = tk.Button(self, text="Back to Testing Area", command=lambda: controller.show_frame(TestArea))
+
+        self.new_test.grid(column=0, row=0, columnspan=3)
+        self.submit_button.grid(column=1, row=1)
+        self.reset_default_button.grid(column=0, row=1)
+        self.clear_button.grid(column=2, row=1)
+        self.test_area_button.grid(column=1, row=2)
+
+    def submit_commands(self):
+        self.update_custom()
+        self.controller.show_frame(TestArea)
+
+    def retrieve_input(self):
+        self.input = self.new_test.get("1.0", tk.END)
+
+    def update_custom(self):
+        self.retrieve_input()
+        custom_test = shelve.open('custom', writeback=True)
+        custom_test.clear()
+        custom_test['sample'] = self.input.split()
+        custom_test.sync()
+        custom_test.close()
+
+    def reset_default(self):
+        string = ''
+        for word in custom_text:
+            string += word + ' '
+        self.new_test.insert('end', string)
+        self.update_custom()
+
+    def empty_input(self):
+        self.new_test.delete('1.0', tk.END)
+        self.update_custom()
 
 if __name__ == "__main__":      
     root = JustType()
