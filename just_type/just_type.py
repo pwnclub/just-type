@@ -1,9 +1,12 @@
 import tkinter as tk
+from tkinter import ttk
+from tkinter import messagebox
 from dictionary import words
 from custom_default import custom_text
 from operator import itemgetter
 import random
 import time
+import sys
 import os
 import math
 import shelve
@@ -11,8 +14,11 @@ import shelve
 class JustType(tk.Tk):
     def __init__(self, *args, **kwargs):
         tk.Tk.__init__(self, *args, **kwargs)
-        container = tk.Frame(self)
 
+        #tk.Tk.iconbitmap(self, "icon.png")
+        tk.Tk.wm_title(self, "Just Type")
+
+        container = tk.Frame(self)
         container.pack()
 
         container.grid_rowconfigure(0, weight=1)
@@ -34,14 +40,16 @@ class JustType(tk.Tk):
             frame.grid_remove()
         frame = self.frames[tab]
         frame.grid()
-        if tab == HighScores:
+        if tab == TestArea:
+            frame.change_test()
+        elif tab == HighScores:
             frame.update()
         
 class TestArea(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)  
 
-        self.timer_limit = 30
+        self.timer_limit = 3
 
         self.wordbank = words[0]
         self.cur_rand_nums = []
@@ -65,13 +73,13 @@ class TestArea(tk.Frame):
         self.wrong_word_label = tk.Label(self, foreground='red', font=("Calibri", 15))
         self.countdown_label = tk.Label(self, font=("Calibri", 15))
         self.live_wpm_label = tk.Label(self, width=8, font=("System", 15))
-        self.reset_button = tk.Button(self, text='Reset', font='System', padx=15, pady=5, background='red', foreground='white', command=self.reset)
-        self.radio_easy = tk.Radiobutton(self, text='Easy', font='System', variable=self.test, value=0, command=self.change_test)
-        self.radio_advanced = tk.Radiobutton(self, text='Advanced', font='System', variable=self.test, value=1, command=self.change_test)
-        self.radio_nums = tk.Radiobutton(self, text='Numbers', font='System', variable=self.test, value=2, command=self.change_test)
-        self.radio_custom = tk.Radiobutton(self, text='Custom', font='System', variable=self.test, value=3, command=self.change_test)
-        self.open_hs_button = tk.Button(self, text='High Scores', command=lambda: [self.reset(), controller.show_frame(HighScores)])
-        self.open_custom_button = tk.Button(self, text='Custom Test', command=lambda: [self.reset(), controller.show_frame(SubmitCustom)])
+        self.reset_button = tk.Button(self, text='Reset', font='System', padx=15, pady=5, background='red', foreground='white', borderwidth=0, command=self.reset)
+        self.radio_easy = ttk.Radiobutton(self, text='Easy', variable=self.test, value=0, command=self.change_test)
+        self.radio_advanced = ttk.Radiobutton(self, text='Advanced', variable=self.test, value=1, command=self.change_test)
+        self.radio_nums = ttk.Radiobutton(self, text='Numbers', variable=self.test, value=2, command=self.change_test)
+        self.radio_custom = ttk.Radiobutton(self, text='Custom', variable=self.test, value=3, command=self.change_test)
+        self.open_hs_button = ttk.Button(self, text='High Scores', command=lambda: [self.reset(), controller.show_frame(HighScores)])
+        self.open_custom_button = ttk.Button(self, text='Custom Test', command=lambda: [self.reset(), controller.show_frame(SubmitCustom)])
 
         self.right_word_label['textvariable'] = self.right_cnt
         self.wrong_word_label['textvariable'] = self.wrong_cnt
@@ -270,7 +278,6 @@ class TestArea(tk.Frame):
             highscores = shelve.open('highscores', writeback=True)
 
             test_id = ''
-
             if(self.test.get() == 0):
                 test_id = 'easy'
             elif(self.test.get() == 1):
@@ -282,6 +289,7 @@ class TestArea(tk.Frame):
                 highscores[test_id].append([wpm, '{}%'.format(accuracy), time.strftime("%d/%m/%Y")])
             else:
                 highscores[test_id].append([cpm, '{}%'.format(accuracy), time.strftime("%d/%m/%Y")])
+
 
             highscores[test_id] = sorted(highscores[test_id], reverse=True)[:10]
             highscores.sync()
@@ -459,11 +467,11 @@ class HighScores(tk.Frame):
         self.test = tk.IntVar()
 
         self.highscores_label = tk.Label(self, justify="left", width=50)
-        self.return_button = tk.Button(self, text="Back to Testing Area", command=lambda: controller.show_frame(TestArea))
-        self.reset_scores_button = tk.Button(self, font='System', padx=15, pady=5, background='red', foreground='white', text="RESET", command=self.reset_scores)
-        self.radio_easy = tk.Radiobutton(self, text='Easy', font='System', command=self.update, variable=self.test, value=0)
-        self.radio_advanced = tk.Radiobutton(self, text='Advanced', font='System', command=self.update, variable=self.test, value=1)
-        self.radio_nums = tk.Radiobutton(self, text='Numbers', font='System', command=self.update, variable=self.test, value=2)
+        self.return_button = ttk.Button(self, text="Back to Testing Area", command=lambda: controller.show_frame(TestArea))
+        self.reset_scores_button = tk.Button(self, font='System', padx=15, pady=5, background='red', foreground='white', text="RESET", borderwidth=0, command=self.reset_scores)
+        self.radio_easy = ttk.Radiobutton(self, text='Easy', command=self.update, variable=self.test, value=0)
+        self.radio_advanced = ttk.Radiobutton(self, text='Advanced', command=self.update, variable=self.test, value=1)
+        self.radio_nums = ttk.Radiobutton(self, text='Numbers', command=self.update, variable=self.test, value=2)
 
         self.highscores_label['textvariable'] = self.highscores_list
 
@@ -478,11 +486,11 @@ class HighScores(tk.Frame):
         highscores = shelve.open('highscores')
         string = ''
 
-        if(self.test.get() == 0):
+        if self.test.get() == 0:
             test_id = 'easy'
-        elif(self.test.get() == 1):
+        elif self.test.get() == 1:
             test_id = 'advanced'
-        elif(self.test.get() == 2):
+        elif self.test.get() == 2:
             test_id = 'nums'
 
         for i in range (1, 11):
@@ -498,19 +506,19 @@ class HighScores(tk.Frame):
         highscores.close()
 
     def reset_scores(self):
-        highscores = shelve.open('highscores')
-
-        if(self.test.get() == 0):
+        if self.test.get() == 0:
             test_id = 'easy'
-        elif(self.test.get() == 1):
+        elif self.test.get() == 1:
             test_id = 'advanced'
-        elif(self.test.get() == 2):
+        elif self.test.get() == 2:
             test_id = 'nums'
 
-        highscores[test_id] = [[0, '0.00%', time.strftime("%d/%m/%Y")]] * 10
-        highscores.sync()
-        highscores.close()
-        self.update()
+        if messagebox.askokcancel("Reset", "Are you sure you want to reset this leaderboard?"):
+            highscores = shelve.open('highscores')
+            highscores[test_id] = [[0, '0.00%', time.strftime("%d/%m/%Y")]] * 10
+            highscores.sync()
+            highscores.close()
+            self.update()
 
 class SubmitCustom(tk.Frame):
     def __init__(self, parent, controller):
@@ -518,10 +526,10 @@ class SubmitCustom(tk.Frame):
         self.controller = controller
 
         self.new_test = tk.Text(self, height=8, width=50)
-        self.submit_button = tk.Button(self, text="Submit!", command=self.submit_commands)
-        self.reset_default_button = tk.Button(self, text="Default Text", command=self.reset_default)
-        self.clear_button = tk.Button(self, text="Clear Text", command=self.empty_input)
-        self.test_area_button = tk.Button(self, text="Back to Testing Area", command=lambda: controller.show_frame(TestArea))
+        self.submit_button = ttk.Button(self, text="Submit!", command=self.submit_commands)
+        self.reset_default_button = ttk.Button(self, text="Default Text", command=self.reset_default)
+        self.clear_button = ttk.Button(self, text="Clear Text", command=self.empty_input)
+        self.test_area_button = ttk.Button(self, text="Back to Testing Area", command=lambda: controller.show_frame(TestArea))
 
         self.new_test.grid(column=0, row=0, columnspan=3)
         self.submit_button.grid(column=1, row=1)
@@ -538,13 +546,14 @@ class SubmitCustom(tk.Frame):
 
     def update_custom(self):
         self.retrieve_input()
+        custom_test = shelve.open('custom', flag='n')
         custom_test = shelve.open('custom', writeback=True)
-        custom_test.clear()
         custom_test['sample'] = self.input.split()
         custom_test.sync()
         custom_test.close()
 
     def reset_default(self):
+        self.empty_input()
         string = ''
         for word in custom_text:
             string += word + ' '
@@ -557,5 +566,7 @@ class SubmitCustom(tk.Frame):
 
 if __name__ == "__main__":      
     root = JustType()
+    img = tk.PhotoImage(file='icon.ico')
+    root.tk.call('wm', 'iconphoto', root._w, img)
     root.resizable(width=False, height=False)
     root.mainloop()
