@@ -10,12 +10,19 @@ import sys
 import os
 import math
 import shelve
+import matplotlib
+matplotlib.use("TkAgg")
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
+from matplotlib.figure import Figure
+import matplotlib.animation as animation
+from matplotlib import style
+
+style.use("ggplot")
 
 class JustType(tk.Tk):
     def __init__(self, *args, **kwargs):
         tk.Tk.__init__(self, *args, **kwargs)
 
-        #tk.Tk.iconbitmap(self, "icon.png")
         tk.Tk.wm_title(self, "Just Type")
 
         container = tk.Frame(self)
@@ -26,7 +33,7 @@ class JustType(tk.Tk):
 
         self.frames = {}
 
-        for Page in (TestArea, HighScores, SubmitCustom):
+        for Page in (TestArea, HighScores, SubmitCustom, GraphOverTime):
             frame = Page(container, self)
             frame.grid(row=0, column=0, sticky="nsew")
 
@@ -42,14 +49,14 @@ class JustType(tk.Tk):
         frame.grid()
         if tab == TestArea:
             frame.change_test()
-        elif tab == HighScores:
+        elif tab == HighScores or tab == GraphOverTime:
             frame.update()
         
 class TestArea(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)  
 
-        self.timer_limit = 3
+        self.timer_limit = 30
 
         self.wordbank = words[0]
         self.cur_rand_nums = []
@@ -67,8 +74,11 @@ class TestArea(tk.Frame):
         self.live_wpm = tk.StringVar()
         self.test = tk.IntVar()
 
-        self.text = tk.Text(self, font=("Courier", 20), width=50, height=2)
-        self.entry = tk.Entry(self, textvariable=self.typing, font=("Courier", 20), takefocus=0)
+        self.f = Figure(figsize=(5, 5), dpi=45)
+        self.a = self.f.add_subplot(111)
+
+        self.text = tk.Text(self, font=("Courier", 22), borderwidth=0, width=50, height=2)
+        self.entry = ttk.Entry(self, textvariable=self.typing, font=("Courier", 20), takefocus=0)
         self.right_word_label = tk.Label(self, foreground='green', font=("Calibri", 15))
         self.wrong_word_label = tk.Label(self, foreground='red', font=("Calibri", 15))
         self.countdown_label = tk.Label(self, font=("Calibri", 15))
@@ -80,6 +90,9 @@ class TestArea(tk.Frame):
         self.radio_custom = ttk.Radiobutton(self, text='Custom', variable=self.test, value=3, command=self.change_test)
         self.open_hs_button = ttk.Button(self, text='High Scores', command=lambda: [self.reset(), controller.show_frame(HighScores)])
         self.open_custom_button = ttk.Button(self, text='Custom Test', command=lambda: [self.reset(), controller.show_frame(SubmitCustom)])
+
+        self.canvas = FigureCanvasTkAgg(self.f, self)
+        self.canvas.show()
 
         self.right_word_label['textvariable'] = self.right_cnt
         self.wrong_word_label['textvariable'] = self.wrong_cnt
@@ -117,6 +130,8 @@ class TestArea(tk.Frame):
         self.open_hs_button.grid(column=2, row=3)
         self.open_custom_button.grid(column=2, row=4)
 
+        self.canvas.get_tk_widget().grid(column=3, row=0, rowspan=5)
+
         controller.bind('<KeyPress>', self.on_key_press)
 
     def reset(self):
@@ -142,6 +157,9 @@ class TestArea(tk.Frame):
         else:
             self.live_wpm.set('{} WPM'.format(self.cur_wpm))
 
+        self.a.clear()
+        self.canvas.show()
+
     def reset_variables(self):
         self.cur_char = 0
         self.cur_letter = 0
@@ -158,6 +176,9 @@ class TestArea(tk.Frame):
 
         self.start_count = False
         self.stop = False
+
+        self.xList = []
+        self.yList = []
 
     def change_test(self):
         if(self.test.get() != 3):
@@ -257,8 +278,19 @@ class TestArea(tk.Frame):
 
             if self.test.get() == 2: 
                 self.live_wpm.set('{} CPM'.format(self.cur_cpm))
+                wpm_or_cpm = self.cur_cpm
             else:
                 self.live_wpm.set('{} WPM'.format(self.cur_wpm))
+                wpm_or_cpm = self.cur_wpm
+
+            if count == self.timer_limit:
+                return
+            elif round(count, 2).is_integer():
+                self.a.clear()
+                self.xList.append(int(self.timer_limit-count))
+                self.yList.append(wpm_or_cpm)
+                self.a.plot(self.xList, self.yList) 
+                self.canvas.show()
         else:
             wpm = int(self.right_chars * (60 / self.timer_limit) // 5)
             cpm = int(self.right_chars * (60 / self.timer_limit))
@@ -276,6 +308,7 @@ class TestArea(tk.Frame):
                 self.time_or_wpm.set('WPM: {}'.format(wpm) + '   ' + 'Accuracy: {}%'.format(accuracy))
 
             highscores = shelve.open('highscores', writeback=True)
+            graphs = shelve.open('graphs', writeback=True)
 
             test_id = ''
             if(self.test.get() == 0):
@@ -287,11 +320,15 @@ class TestArea(tk.Frame):
 
             if(test_id != 'nums'):
                 highscores[test_id].append([wpm, '{}%'.format(accuracy), time.strftime("%d/%m/%Y")])
+                graphs[test_id].append(wpm)
             else:
                 highscores[test_id].append([cpm, '{}%'.format(accuracy), time.strftime("%d/%m/%Y")])
-
+                graphs[test_id].append(cpm)
 
             highscores[test_id] = sorted(highscores[test_id], reverse=True)[:10]
+
+            graphs.sync()
+            graphs.close()
             highscores.sync()
             highscores.close()
 
@@ -312,6 +349,13 @@ class TestArea(tk.Frame):
                 self.cur_wpm = int(self.right_chars * (60 / (count)) // 5)
 
                 self.live_wpm.set('{} WPM'.format(self.cur_wpm))
+
+                if round(count, 2).is_integer():
+                    self.a.clear()
+                    self.xList.append(count)
+                    self.yList.append(self.cur_wpm)
+                    self.a.plot(self.xList, self.yList) 
+                    self.canvas.show()
 
         if(self.right_words + self.wrong_words >= len(self.wordbank)):
             wpm = int(self.right_chars * (60 / count) // 5)
@@ -468,6 +512,7 @@ class HighScores(tk.Frame):
 
         self.highscores_label = tk.Label(self, justify="left", width=50)
         self.return_button = ttk.Button(self, text="Back to Testing Area", command=lambda: controller.show_frame(TestArea))
+        self.graph_button = ttk.Button(self, text="Graphs", command=lambda: controller.show_frame(GraphOverTime))
         self.reset_scores_button = tk.Button(self, font='System', padx=15, pady=5, background='red', foreground='white', text="RESET", borderwidth=0, command=self.reset_scores)
         self.radio_easy = ttk.Radiobutton(self, text='Easy', command=self.update, variable=self.test, value=0)
         self.radio_advanced = ttk.Radiobutton(self, text='Advanced', command=self.update, variable=self.test, value=1)
@@ -477,6 +522,7 @@ class HighScores(tk.Frame):
 
         self.highscores_label.grid(column=1, row=0, columnspan=2, rowspan=4)
         self.return_button.grid(column=0, row=4)
+        self.graph_button.grid(column=0, row=5)
         self.reset_scores_button.grid(column=1, row=4, sticky="e")
         self.radio_easy.grid(column=0 , row=0, sticky='w')
         self.radio_advanced.grid(column=0, row=1, sticky='w')
@@ -524,18 +570,19 @@ class SubmitCustom(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
         self.controller = controller
-
         self.new_test = tk.Text(self, height=8, width=50)
-        self.submit_button = ttk.Button(self, text="Submit!", command=self.submit_commands)
-        self.reset_default_button = ttk.Button(self, text="Default Text", command=self.reset_default)
-        self.clear_button = ttk.Button(self, text="Clear Text", command=self.empty_input)
-        self.test_area_button = ttk.Button(self, text="Back to Testing Area", command=lambda: controller.show_frame(TestArea))
+
+        submit_button = ttk.Button(self, text="Submit!", command=self.submit_commands)
+        reset_default_button = ttk.Button(self, text="Default Text", command=self.reset_default)
+        clear_button = ttk.Button(self, text="Clear Text", command=self.empty_input)
+        test_area_button = ttk.Button(self, text="Back to Testing Area", command=lambda: controller.show_frame(TestArea))
 
         self.new_test.grid(column=0, row=0, columnspan=3)
-        self.submit_button.grid(column=1, row=1)
-        self.reset_default_button.grid(column=0, row=1)
-        self.clear_button.grid(column=2, row=1)
-        self.test_area_button.grid(column=1, row=2)
+
+        submit_button.grid(column=1, row=1)
+        reset_default_button.grid(column=0, row=1)
+        clear_button.grid(column=2, row=1)
+        test_area_button.grid(column=1, row=2)
 
     def submit_commands(self):
         self.update_custom()
@@ -563,6 +610,72 @@ class SubmitCustom(tk.Frame):
     def empty_input(self):
         self.new_test.delete('1.0', tk.END)
         self.update_custom()
+
+class GraphOverTime(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+        self.highscores_list = tk.StringVar()
+        self.test = tk.IntVar()
+
+        self.return_button = ttk.Button(self, text="Back to Testing Area", command=lambda: controller.show_frame(TestArea))
+        self.graph_button = ttk.Button(self, text="Highscores", command=lambda: controller.show_frame(HighScores))
+        self.reset_scores_button = tk.Button(self, font='System', padx=15, pady=5, background='red', foreground='white', text="RESET", borderwidth=0, command=self.reset_graphs)
+        self.radio_easy = ttk.Radiobutton(self, text='Easy', command=self.update, variable=self.test, value=0)
+        self.radio_advanced = ttk.Radiobutton(self, text='Advanced', command=self.update, variable=self.test, value=1)
+        self.radio_nums = ttk.Radiobutton(self, text='Numbers', command=self.update, variable=self.test, value=2)
+
+        self.f = Figure(figsize=(5, 5), dpi=75)
+        self.a = self.f.add_subplot(111)
+
+        self.canvas = FigureCanvasTkAgg(self.f, self)
+        self.canvas.show()
+        self.canvas.get_tk_widget().grid(column=1, row=0, columnspan=5, rowspan=10)
+
+        self.return_button.grid(column=0, row=10)
+        self.graph_button.grid(column=0, row=11)
+        self.reset_scores_button.grid(column=3, row=10)
+        self.radio_easy.grid(column=0 , row=0, sticky='w')
+        self.radio_advanced.grid(column=0, row=1, sticky='w')
+        self.radio_nums.grid(column=0, row=2, sticky='w')
+
+    def update(self):
+        self.a.clear()
+
+        graphs = shelve.open('graphs')
+
+        if self.test.get() == 0:
+            test_id = 'easy'
+        elif self.test.get() == 1:
+            test_id = 'advanced'
+        elif self.test.get() == 2:
+            test_id = 'nums'
+
+        test_count = []
+        wpm = []
+        
+        for i in range(0, len(graphs[test_id])):
+            test_count.append(i)
+            wpm.append(graphs[test_id][i])
+
+        self.a.plot(test_count, wpm) 
+        self.canvas.show()
+
+        graphs.close()
+
+    def reset_graphs(self):
+        if self.test.get() == 0:
+            test_id = 'easy'
+        elif self.test.get() == 1:
+            test_id = 'advanced'
+        elif self.test.get() == 2:
+            test_id = 'nums'
+
+        if messagebox.askokcancel("Reset", "Are you sure you want to reset this leaderboard?"):
+            graphs = shelve.open('graphs')
+            graphs[test_id] = []
+            graphs.sync()
+            graphs.close()
+            self.update()
 
 if __name__ == "__main__":      
     root = JustType()
