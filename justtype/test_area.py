@@ -10,32 +10,33 @@ import os
 import math
 import shelve
 
-import matplotlib
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
-from matplotlib.figure import Figure
-matplotlib.use("TkAgg")
-
 import just_type
 import highscores
 import submit_custom
 
+import matplotlib
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
+from matplotlib.figure import Figure
+matplotlib.use('TkAgg')
+
 class TestArea(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)  
+        self.controller = controller
+
         self.HighScores = highscores.HighScores
         self.SubmitCustom = submit_custom.SubmitCustom
 
         self.timer_limit = 30
 
+        # start off with 'easy' wordbank
         self.wordbank = words[0]
         self.cur_rand_nums = []
         self.nxt_rand_nums = []
-
         self.reset_variables()
+        self.init_ui()
 
-        self.init_ui(parent, controller)
-
-    def init_ui(self, parent, controller):
+    def init_ui(self):
         self.typing = tk.StringVar()
         self.right_cnt = tk.StringVar()
         self.wrong_cnt = tk.StringVar()
@@ -43,24 +44,24 @@ class TestArea(tk.Frame):
         self.live_wpm = tk.StringVar()
         self.test = tk.IntVar()
 
-        self.f = Figure(figsize=(5, 5), dpi=45)
-        self.a = self.f.add_subplot(111)
+        self.figure = Figure(figsize=(5, 5), dpi=45)
+        self.graph = self.figure.add_subplot(111)
 
-        self.text = tk.Text(self, font=("Courier", 22), borderwidth=0, width=50, height=2)
-        self.entry = ttk.Entry(self, textvariable=self.typing, font=("Courier", 20), takefocus=0)
-        self.right_word_label = tk.Label(self, foreground='green', font=("Calibri", 15))
-        self.wrong_word_label = tk.Label(self, foreground='red', font=("Calibri", 15))
-        self.countdown_label = tk.Label(self, font=("Calibri", 15))
-        self.live_wpm_label = tk.Label(self, width=8, font=("System", 15))
+        self.text = tk.Text(self, font=('Courier', 22), borderwidth=0, width=50, height=2)
+        self.entry = ttk.Entry(self, textvariable=self.typing, font=('Courier', 20), takefocus=0)
+        self.right_word_label = tk.Label(self, foreground='green', font=('Calibri', 15))
+        self.wrong_word_label = tk.Label(self, foreground='red', font=('Calibri', 15))
+        self.countdown_label = tk.Label(self, font=('Calibri', 15))
+        self.live_wpm_label = tk.Label(self, width=8, font=('System', 15))
         self.reset_button = tk.Button(self, text='Reset', font='System', padx=15, pady=5, background='red', foreground='white', borderwidth=0, command=self.reset)
         self.radio_easy = ttk.Radiobutton(self, text='Easy', variable=self.test, value=0, command=self.change_test)
         self.radio_advanced = ttk.Radiobutton(self, text='Advanced', variable=self.test, value=1, command=self.change_test)
         self.radio_nums = ttk.Radiobutton(self, text='Numbers', variable=self.test, value=2, command=self.change_test)
         self.radio_custom = ttk.Radiobutton(self, text='Custom', variable=self.test, value=3, command=self.change_test)
-        self.open_hs_button = ttk.Button(self, text='High Scores', command=lambda: [self.reset(), controller.show_frame(self.HighScores)])
-        self.open_custom_button = ttk.Button(self, text='Custom Test', command=lambda: [self.reset(), controller.show_frame(self.SubmitCustom)])
+        self.open_hs_button = ttk.Button(self, text='High Scores', command=lambda: [self.reset(), self.controller.show_frame(self.HighScores)])
+        self.open_custom_button = ttk.Button(self, text='Custom Test', command=lambda: [self.reset(), self.controller.show_frame(self.SubmitCustom)])
 
-        self.canvas = FigureCanvasTkAgg(self.f, self)
+        self.canvas = FigureCanvasTkAgg(self.figure, self)
         self.canvas.show()
 
         self.right_word_label['textvariable'] = self.right_cnt
@@ -98,10 +99,9 @@ class TestArea(tk.Frame):
         self.radio_custom.grid(column=0, row=4, sticky='w')
         self.open_hs_button.grid(column=2, row=3)
         self.open_custom_button.grid(column=2, row=4)
-
         self.canvas.get_tk_widget().grid(column=3, row=0, rowspan=5)
 
-        controller.bind('<KeyPress>', self.on_key_press)
+        self.controller.bind('<KeyPress>', self.on_key_press)
 
     def reset(self):
         self.text.config(state=tk.NORMAL)
@@ -126,7 +126,7 @@ class TestArea(tk.Frame):
         else:
             self.live_wpm.set('{} WPM'.format(self.cur_wpm))
 
-        self.a.clear()
+        self.graph.clear()
         self.canvas.show()
 
     def reset_variables(self):
@@ -140,7 +140,6 @@ class TestArea(tk.Frame):
         self.wrong_chars = 0
         self.cur_wpm = 0
         self.cur_cpm = 0
-
         self.cur_index = 0
 
         self.start_count = False
@@ -150,11 +149,12 @@ class TestArea(tk.Frame):
         self.yList = []
 
     def change_test(self):
-        if(self.test.get() != 3):
+        if self.test.get() != 3:
             self.wordbank = words[self.test.get()]
         else:
             custom_test = open('custom/custom.txt', 'r')
             self.wordbank = custom_test.read().split()
+
         self.reset()
 
     def init_rand_gen(self):
@@ -215,7 +215,6 @@ class TestArea(tk.Frame):
         self.text.insert('end', '\n')
 
         for i in range(start, len(self.wordbank)):
-
             if total_chars + len(self.wordbank[i]) + 1 > 50:
                 self.cur_index += i - start
                 return
@@ -254,10 +253,10 @@ class TestArea(tk.Frame):
             if count == self.timer_limit:
                 return
             elif round(count, 2).is_integer():
-                self.a.clear()
+                self.graph.clear()
                 self.xList.append(int(self.timer_limit-count))
                 self.yList.append(wpm_or_cpm)
-                self.a.plot(self.xList, self.yList) 
+                self.graph.plot(self.xList, self.yList) 
                 self.canvas.show()
         else:
             wpm = int(self.right_chars * (60 / self.timer_limit) // 5)
@@ -275,30 +274,30 @@ class TestArea(tk.Frame):
             else:
                 self.time_or_wpm.set('WPM: {}'.format(wpm) + '   ' + 'Accuracy: {}%'.format(accuracy))
 
-            highscores = shelve.open('data/highscores', writeback=True)
-            graphs = shelve.open('data/graphs', writeback=True)
+            # if the user types a word or two it doesn't store the score (assumes afk)
+            if cpm > 15:
+                highscores = shelve.open('data/highscores', writeback=True)
+                graphs = shelve.open('data/graphs', writeback=True)
 
-            test_id = ''
-            if(self.test.get() == 0):
-                test_id = 'easy'
-            elif(self.test.get() == 1):
-                test_id = 'advanced'
-            elif(self.test.get() == 2):
-                test_id = 'nums'
+                test_id = ''
+                if(self.test.get() == 0):
+                    test_id = 'easy'
+                elif(self.test.get() == 1):
+                    test_id = 'advanced'
+                elif(self.test.get() == 2):
+                    test_id = 'nums'
 
-            if(test_id != 'nums'):
-                highscores[test_id].append([wpm, '{}%'.format(accuracy), time.strftime("%d/%m/%Y")])
-                graphs[test_id].append(wpm)
-            else:
-                highscores[test_id].append([cpm, '{}%'.format(accuracy), time.strftime("%d/%m/%Y")])
-                graphs[test_id].append(cpm)
+                if(test_id != 'nums'):
+                    highscores[test_id].append([wpm, '{}%'.format(accuracy), time.strftime('%d/%m/%Y')])
+                    graphs[test_id].append(wpm)
+                else:
+                    highscores[test_id].append([cpm, '{}%'.format(accuracy), time.strftime('%d/%m/%Y')])
+                    graphs[test_id].append(cpm)
 
-            highscores[test_id] = sorted(highscores[test_id], reverse=True)[:10]
+                highscores[test_id] = sorted(highscores[test_id], reverse=True)[:10]
 
-            graphs.sync()
-            graphs.close()
-            highscores.sync()
-            highscores.close()
+                graphs.close()
+                highscores.close()
 
             self.entry.delete(0, tk.END)
             self.entry.config(state=tk.DISABLED)
@@ -319,13 +318,13 @@ class TestArea(tk.Frame):
                 self.live_wpm.set('{} WPM'.format(self.cur_wpm))
 
                 if round(count, 2).is_integer():
-                    self.a.clear()
+                    self.graph.clear()
                     self.xList.append(count)
                     self.yList.append(self.cur_wpm)
-                    self.a.plot(self.xList, self.yList) 
+                    self.graph.plot(self.xList, self.yList) 
                     self.canvas.show()
 
-        if(self.right_words + self.wrong_words >= len(self.wordbank)):
+        if self.right_words + self.wrong_words >= len(self.wordbank):
             wpm = int(self.right_chars * (60 / count) // 5)
             total_chars = (self.right_chars + self.wrong_chars)
 
