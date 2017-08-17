@@ -12,3 +12,7 @@ It is loosely based the site [10fastfingers](http://10fastfingers.com/typing-tes
 * Top 10 fastest times for each test, including their dates and your accuracy
 * Resettable graphs showing WPM/CPM progress over time for each test
 * Submit your own text for a customized test that ends when you're done typing it
+
+<p align="center">
+  <img src="https://github.com/pwnclub/just-type/blob/master/justtype/art/highscores.PNG"/>
+</p>
