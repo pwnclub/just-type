@@ -1,11 +1,9 @@
 # Just Type
 Just Type is an offline, minimalist typing speed test application built with Tkinter.
 
-![Just Type](https://github.com/pwnclub/just-type/blob/master/justtype/art/just_type.gif)
-
 It is loosely based the site [10fastfingers](http://10fastfingers.com/typing-test/english), using similar wordbanks for the 'easy' and 'advanced' tests.
 
-![WPM Graphs](https://github.com/pwnclub/just-type/blob/master/justtype/art/graphs.PNG)
+![Just Type](https://github.com/pwnclub/just-type/blob/master/justtype/art/just_type.gif)
 
 # Features
 * Visual feedback for words that have been typed and are currently being typed
