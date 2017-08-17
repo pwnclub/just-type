@@ -2,16 +2,18 @@ import tkinter as tk
 from tkinter import ttk
 from dictionary import words
 from operator import itemgetter
+
 import random
 import time
 import sys
 import os
 import math
 import shelve
+
 import matplotlib
-matplotlib.use("TkAgg")
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
 from matplotlib.figure import Figure
+matplotlib.use("TkAgg")
 
 import just_type
 import highscores
@@ -151,9 +153,8 @@ class TestArea(tk.Frame):
         if(self.test.get() != 3):
             self.wordbank = words[self.test.get()]
         else:
-            custom_test = shelve.open('custom')
-            self.wordbank = custom_test['sample']
-            custom_test.close()
+            custom_test = open('custom/custom.txt', 'r')
+            self.wordbank = custom_test.read().split()
         self.reset()
 
     def init_rand_gen(self):
@@ -274,8 +275,8 @@ class TestArea(tk.Frame):
             else:
                 self.time_or_wpm.set('WPM: {}'.format(wpm) + '   ' + 'Accuracy: {}%'.format(accuracy))
 
-            highscores = shelve.open('highscores', writeback=True)
-            graphs = shelve.open('graphs', writeback=True)
+            highscores = shelve.open('data/highscores', writeback=True)
+            graphs = shelve.open('data/graphs', writeback=True)
 
             test_id = ''
             if(self.test.get() == 0):

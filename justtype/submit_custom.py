@@ -1,8 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
 
-import shelve
-
 import test_area
 
 class SubmitCustom(tk.Frame):
@@ -23,7 +21,7 @@ class SubmitCustom(tk.Frame):
         reset_default_button.grid(column=0, row=1)
         clear_button.grid(column=2, row=1)
         test_area_button.grid(column=1, row=2)
-
+    
     def submit_commands(self):
         self.update_custom()
         self.controller.show_frame(self.TestArea)
@@ -33,20 +31,14 @@ class SubmitCustom(tk.Frame):
 
     def update_custom(self):
         self.retrieve_input()
-        custom_test = shelve.open('custom', flag='n')
-        custom_test = shelve.open('custom', writeback=True)
-        custom_test['sample'] = self.input.split()
-        custom_test.sync()
-        custom_test.close()
+        custom_test = open('custom/custom.txt', 'w')
+        custom_test.write(self.input)
 
     def reset_default(self):
         self.empty_input()
         string = ''
-        with open('custom_default.txt', 'r') as file:
-            for line in file:
-                for word in line.split():
-                    string += word + ' '
-        self.new_test.insert('end', string)
+        custom_test = open('custom/custom_default.txt', 'r')
+        self.new_test.insert(tk.END, custom_test.read())
         self.update_custom()
 
     def empty_input(self):

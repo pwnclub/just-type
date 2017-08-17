@@ -34,7 +34,7 @@ class HighScores(tk.Frame):
         self.radio_nums.grid(column=0, row=2, sticky='w')
 
     def update(self):
-        highscores = shelve.open('highscores')
+        highscores = shelve.open('data/highscores')
         string = ''
 
         if self.test.get() == 0:
@@ -65,7 +65,7 @@ class HighScores(tk.Frame):
             test_id = 'nums'
 
         if messagebox.askokcancel("Reset", "Are you sure you want to reset this leaderboard?"):
-            highscores = shelve.open('highscores')
+            highscores = shelve.open('data/highscores')
             highscores[test_id] = [[0, '0.00%', time.strftime("%d/%m/%Y")]] * 10
             highscores.sync()
             highscores.close()

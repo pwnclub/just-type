@@ -43,7 +43,7 @@ class GraphOverTime(tk.Frame):
     def update(self):
         self.a.clear()
 
-        graphs = shelve.open('graphs')
+        graphs = shelve.open('data/graphs')
 
         if self.test.get() == 0:
             test_id = 'easy'
@@ -73,7 +73,7 @@ class GraphOverTime(tk.Frame):
             test_id = 'nums'
 
         if messagebox.askokcancel("Reset", "Are you sure you want to reset this leaderboard?"):
-            graphs = shelve.open('graphs')
+            graphs = shelve.open('data/graphs')
             graphs[test_id] = []
             graphs.sync()
             graphs.close()
