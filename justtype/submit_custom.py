@@ -10,17 +10,17 @@ class SubmitCustom(tk.Frame):
         self.TestArea = test_area.TestArea
         self.controller = controller
 
-        self.new_test = tk.Text(self, height=8, width=50)
+        self.new_test = tk.Text(self, font='Courier', height=10, width=60, wrap='word')
         self.submit_button = tk.Button(self, text='Submit!', font='System', padx=15, pady=5, background='green', foreground='white', borderwidth=0, command=self.submit_commands)
         self.reset_default_button = ttk.Button(self, text='Default Text', command=self.reset_default)
         self.clear_button = ttk.Button(self, text='Clear Text', command=self.empty_input)
-        self.test_area_button = ttk.Button(self, text='Back to Testing Area', command=lambda: controller.show_frame(self.TestArea))
+        self.test_area_button = ttk.Button(self, text='Home', command=lambda: controller.show_frame(self.TestArea))
 
         self.new_test.grid(column=0, row=0, columnspan=3)
-        self.submit_button.grid(column=1, row=1)
+        self.submit_button.grid(column=1, row=1, pady=5)
         self.reset_default_button.grid(column=0, row=1)
         self.clear_button.grid(column=2, row=1)
-        self.test_area_button.grid(column=1, row=2)
+        self.test_area_button.grid(column=1, row=2, pady=5)
 
     def submit_commands(self):
         self.update_custom()

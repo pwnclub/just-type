@@ -19,15 +19,16 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 from matplotlib.figure import Figure
 matplotlib.use('TkAgg')
 
+TIMER_LIMIT = 20
+
+
 class TestArea(tk.Frame):
     def __init__(self, parent, controller):
-        tk.Frame.__init__(self, parent)  
+        tk.Frame.__init__(self, parent)
         self.controller = controller
 
         self.HighScores = highscores.HighScores
         self.SubmitCustom = submit_custom.SubmitCustom
-
-        self.timer_limit = 30
 
         # start off with 'easy' wordbank
         self.wordbank = words[0]
@@ -44,7 +45,7 @@ class TestArea(tk.Frame):
         self.live_wpm = tk.StringVar()
         self.test = tk.IntVar()
 
-        self.figure = Figure(figsize=(5, 5), dpi=45)
+        self.figure = Figure(figsize=(5, 5), dpi=40)
         self.graph = self.figure.add_subplot(111)
 
         self.text = tk.Text(self, font=('Courier', 22), borderwidth=0, width=50, height=2)
@@ -87,13 +88,13 @@ class TestArea(tk.Frame):
         self.text.tag_config('wrong', foreground='red')
 
         self.text.grid(column=0, row=0, columnspan=3)
-        self.entry.grid(column=1 , row=1)
-        self.reset_button.grid(column=2 , row=1, pady=5)
-        self.right_word_label.grid(column=1 , row=2, pady=5)
-        self.wrong_word_label.grid(column=1 , row=3, pady=5)
+        self.entry.grid(column=1, row=1)
+        self.reset_button.grid(column=2, row=1)
+        self.right_word_label.grid(column=1, row=2)
+        self.wrong_word_label.grid(column=1, row=3)
         self.live_wpm_label.grid(column=2, row=2)
-        self.countdown_label.grid(column=1 , row=4)
-        self.radio_easy.grid(column=0 , row=1, sticky='w')
+        self.countdown_label.grid(column=1, row=4)
+        self.radio_easy.grid(column=0, row=1, sticky='w')
         self.radio_advanced.grid(column=0, row=2, sticky='w')
         self.radio_nums.grid(column=0, row=3, sticky='w')
         self.radio_custom.grid(column=0, row=4, sticky='w')
@@ -237,30 +238,36 @@ class TestArea(tk.Frame):
             self.after(100, self.countdown, count - 0.1)
 
             # stops from dividing by zero, which would lead to first letter being marked incorrect
-            if count != self.timer_limit:
-                self.cur_wpm = int(self.right_chars * (60 / (self.timer_limit - count)) // 5)
+            if count != TIMER_LIMIT:
+                self.cur_wpm = int(self.right_chars * (60 / (TIMER_LIMIT - count)) // 5)
 
                 if self.test.get() == 2:
-                    self.cur_cpm =  int(self.right_chars * (60/ (self.timer_limit - count)))
+                    self.cur_cpm = int(self.right_chars * (60 / (TIMER_LIMIT - count)) / 2)
 
-            if self.test.get() == 2: 
+            if self.test.get() == 2:
                 self.live_wpm.set('{} CPM'.format(self.cur_cpm))
                 wpm_or_cpm = self.cur_cpm
             else:
                 self.live_wpm.set('{} WPM'.format(self.cur_wpm))
                 wpm_or_cpm = self.cur_wpm
 
-            if count == self.timer_limit:
+            if count == TIMER_LIMIT:
                 return
             elif round(count, 2).is_integer():
                 self.graph.clear()
-                self.xList.append(int(self.timer_limit-count))
+                self.xList.append(int(TIMER_LIMIT-count))
                 self.yList.append(wpm_or_cpm)
-                self.graph.plot(self.xList, self.yList) 
+
+                if self.test.get() == 2:
+                    self.graph.set_title("Live CPM")
+                else:
+                    self.graph.set_title("Live WPM")
+
+                self.graph.plot(self.xList, self.yList)
                 self.canvas.show()
         else:
-            wpm = int(self.right_chars * (60 / self.timer_limit) // 5)
-            cpm = int(self.right_chars * (60 / self.timer_limit))
+            wpm = int(self.right_chars * (60 / TIMER_LIMIT) / 5)
+            cpm = int(self.right_chars * (60 / TIMER_LIMIT) / 2)
 
             total_chars = (self.right_chars + self.wrong_chars)
 
@@ -270,6 +277,7 @@ class TestArea(tk.Frame):
                 accuracy = round((self.right_chars / total_chars) * 100, 2)
 
             if self.test.get() == 2:
+                # divide by two here because we don't want to include skipped spaces which make up half of CPM
                 self.time_or_wpm.set('CPM: {}'.format(cpm) + '   ' + 'Accuracy: {}%'.format(accuracy))
             else:
                 self.time_or_wpm.set('WPM: {}'.format(wpm) + '   ' + 'Accuracy: {}%'.format(accuracy))
@@ -321,7 +329,10 @@ class TestArea(tk.Frame):
                     self.graph.clear()
                     self.xList.append(count)
                     self.yList.append(self.cur_wpm)
-                    self.graph.plot(self.xList, self.yList) 
+
+                    self.graph.set_title("Live WPM")
+
+                    self.graph.plot(self.xList, self.yList)
                     self.canvas.show()
 
         if self.right_words + self.wrong_words >= len(self.wordbank):
@@ -363,7 +374,7 @@ class TestArea(tk.Frame):
                 if not self.start_count:
                     self.start_count = True
                     if self.test.get() != 3:
-                        self.countdown(self.timer_limit)
+                        self.countdown(TIMER_LIMIT)
                     else:
                         self.countup(0)
                 self.add_char(event.char)
@@ -433,7 +444,7 @@ class TestArea(tk.Frame):
 
             # prevents spamming
             # this is especially true in the number test, as holding down any key would lead to 400+ CPM
-            if self.wrong_words > self.timer_limit * 5:
+            if self.wrong_words > TIMER_LIMIT * 5:
                 self.entry.config(state=tk.DISABLED)
                 self.stop = True
 
@@ -468,5 +479,5 @@ class TestArea(tk.Frame):
         if self.test.get() != 3:
             self.gen_nxt_line()
         elif self.cur_index < len(self.wordbank)-1:
-            
+
             self.gen_nxt_line_custom(self.cur_index)
