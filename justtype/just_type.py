@@ -49,7 +49,7 @@ class JustType(tk.Tk):
 
 if __name__ == "__main__":      
     root = JustType()
-    img = tk.PhotoImage(file='icon/icon.ico')
+    img = tk.PhotoImage(file='art/icon.ico')
     root.tk.call('wm', 'iconphoto', root._w, img)
     root.resizable(width=False, height=False)
     root.mainloop()
