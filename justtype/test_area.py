@@ -19,7 +19,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 from matplotlib.figure import Figure
 matplotlib.use('TkAgg')
 
-TIMER_LIMIT = 3
+TIMER_LIMIT = 60
 
 
 class TestArea(tk.Frame):
@@ -36,6 +36,43 @@ class TestArea(tk.Frame):
         self.nxt_rand_nums = []
         self.reset_variables()
         self.init_ui()
+
+    def on_key_press(self, event):
+        if self.entry != self.entry.focus_get() or self.stop:
+            return
+
+        try:
+            self.text.config(state=tk.NORMAL)
+
+            # backspace
+            if ord(event.char) == 8:
+                self.remove_char()
+
+            # space
+            elif ord(event.char) == 32:
+                # stops quick skipping over words while holding space
+                if self.cur_letter == 0:
+                    self.entry.delete(0, tk.END)
+                else:
+                    self.move_next_word()
+
+            else:
+                # if test timer hasn't started, start it
+                if not self.start_count:
+                    self.start_count = True
+                    if self.test.get() != 3:
+                        self.countdown(TIMER_LIMIT)
+                    else:
+                        self.countup(0)
+                self.add_char(event.char)
+
+                # if doing the num pad test, automatically move to next number
+                if self.test.get() == 2:
+                    self.move_next_word()
+
+            self.text.config(state=tk.DISABLED)
+        except:
+            return
 
     def init_ui(self):
         self.typing = tk.StringVar()
@@ -104,6 +141,41 @@ class TestArea(tk.Frame):
 
         self.controller.bind('<KeyPress>', self.on_key_press)
 
+    def init_rand_gen(self):
+        self.text.delete('1.0', tk.END)
+        del self.cur_rand_nums[:]
+        total_chars = 0
+
+        while True:
+            random_num = random.randint(0, len(self.wordbank) - 1)
+
+            if total_chars + len(self.wordbank[random_num]) + 1 > 50:
+                break
+
+            self.cur_rand_nums.append(random_num)
+            self.text.insert('end', self.wordbank[random_num] + ' ')
+
+            total_chars += len(self.wordbank[random_num]) + 1
+
+        self.gen_nxt_line()
+
+    def gen_nxt_line(self):
+        del self.nxt_rand_nums[:]
+        total_chars = 0
+
+        self.text.insert('end', '\n')
+
+        while True:
+            random_num = random.randint(0, len(self.wordbank) - 1)
+
+            if total_chars + len(self.wordbank[random_num]) + 1 > 50:
+                break
+
+            self.nxt_rand_nums.append(random_num)
+            self.text.insert('end', self.wordbank[random_num] + ' ')
+
+            total_chars += len(self.wordbank[random_num]) + 1
+
     def reset(self):
         self.text.config(state=tk.NORMAL)
         self.reset_variables()
@@ -158,24 +230,6 @@ class TestArea(tk.Frame):
 
         self.reset()
 
-    def init_rand_gen(self):
-        self.text.delete('1.0', tk.END)
-        del self.cur_rand_nums[:]
-        total_chars = 0
-
-        while True:
-            random_num = random.randint(0, len(self.wordbank) - 1)
-
-            if total_chars + len(self.wordbank[random_num]) + 1 > 50:
-                break
-
-            self.cur_rand_nums.append(random_num)
-            self.text.insert('end', self.wordbank[random_num] + ' ')
-
-            total_chars += len(self.wordbank[random_num]) + 1
-
-        self.gen_nxt_line()
-
     def init_rand_gen_custom(self):
         self.text.delete('1.0', tk.END)
         del self.cur_rand_nums[:]
@@ -191,23 +245,6 @@ class TestArea(tk.Frame):
             self.text.insert('end', self.wordbank[i] + ' ')
 
             total_chars += len(self.wordbank[i]) + 1
-
-    def gen_nxt_line(self):
-        del self.nxt_rand_nums[:]
-        total_chars = 0
-
-        self.text.insert('end', '\n')
-
-        while True:
-            random_num = random.randint(0, len(self.wordbank) - 1)
-
-            if total_chars + len(self.wordbank[random_num]) + 1 > 50:
-                break
-
-            self.nxt_rand_nums.append(random_num)
-            self.text.insert('end', self.wordbank[random_num] + ' ')
-
-            total_chars += len(self.wordbank[random_num]) + 1
 
     def gen_nxt_line_custom(self, start):
         del self.nxt_rand_nums[:]
@@ -366,51 +403,6 @@ class TestArea(tk.Frame):
             self.entry.config(state=tk.DISABLED)
             self.stop = True
 
-    def on_key_press(self, event):
-        if self.entry != self.entry.focus_get() or self.stop:
-            return
-
-        try:
-            self.text.config(state=tk.NORMAL)
-
-            # backspace
-            if ord(event.char) == 8:
-                self.remove_char()
-
-            # space
-            elif ord(event.char) == 32:
-                # stops quick skipping over words while holding space
-                if self.cur_letter == 0:
-                    self.entry.delete(0, tk.END)
-                else:
-                    self.move_next_word()
-
-            else:
-                # if test timer hasn't started, start it
-                if not self.start_count:
-                    self.start_count = True
-                    if self.test.get() != 3:
-                        self.countdown(TIMER_LIMIT)
-                    else:
-                        self.countup(0)
-                self.add_char(event.char)
-
-                # if doing the num pad test, automatically move to next number
-                if self.test.get() == 2:
-                    self.move_next_word()
-
-            self.text.config(state=tk.DISABLED)
-        except:
-            return
-
-    def add_effect(self, typeOf):
-        bank_index = self.cur_rand_nums[self.cur_word]
-        self.text.tag_add(typeOf, '1.{}'.format(self.cur_char), '1.{}'.format(self.cur_char + len(self.wordbank[bank_index])))
-
-    def remove_effect(self, typeOf):
-        bank_index = self.cur_rand_nums[self.cur_word]
-        self.text.tag_remove(typeOf, '1.{}'.format(self.cur_char), '1.{}'.format(self.cur_char + len(self.wordbank[bank_index])))
-
     def add_char(self, key):
         bank_index = self.cur_rand_nums[self.cur_word]
 
@@ -497,3 +489,11 @@ class TestArea(tk.Frame):
         elif self.cur_index < len(self.wordbank)-1:
 
             self.gen_nxt_line_custom(self.cur_index)
+ 
+    def add_effect(self, typeOf):
+        bank_index = self.cur_rand_nums[self.cur_word]
+        self.text.tag_add(typeOf, '1.{}'.format(self.cur_char), '1.{}'.format(self.cur_char + len(self.wordbank[bank_index])))
+
+    def remove_effect(self, typeOf):
+        bank_index = self.cur_rand_nums[self.cur_word]
+        self.text.tag_remove(typeOf, '1.{}'.format(self.cur_char), '1.{}'.format(self.cur_char + len(self.wordbank[bank_index])))

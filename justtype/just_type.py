@@ -47,8 +47,3 @@ class JustType(tk.Tk):
             frame.change_test()
         elif tab == self.HighScores or tab == self.GraphOverTime:
             frame.update()
-
-if __name__ == '__main__':
-    root = JustType()
-    root.resizable(width=False, height=False)
-    root.mainloop()

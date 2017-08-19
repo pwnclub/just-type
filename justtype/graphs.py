@@ -45,14 +45,6 @@ class GraphOverTime(tk.Frame):
         self.test_area_button.grid(column=0, row=8)
         self.graph_button.grid(column=0, row=9)
 
-    def get_id(self):
-        if self.test.get() == 0:
-            return 'easy'
-        elif self.test.get() == 1:
-            return 'advanced'
-        elif self.test.get() == 2:
-            return 'nums'
-
     def update(self):
         test_id = self.get_id()
 
@@ -96,3 +88,11 @@ class GraphOverTime(tk.Frame):
             graphs[test_id] = []
             graphs.close()
             self.update()
+
+    def get_id(self):
+        if self.test.get() == 0:
+            return 'easy'
+        elif self.test.get() == 1:
+            return 'advanced'
+        elif self.test.get() == 2:
+            return 'nums'

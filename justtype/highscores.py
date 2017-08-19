@@ -65,6 +65,16 @@ class HighScores(tk.Frame):
             data['nums'] = [[0, '0.00%', time.strftime('%d/%m/%Y')]] * 10
             self.build_highscores(data, test_id)
 
+    def reset_scores(self):
+        test_id = self.get_id()
+
+        if messagebox.askokcancel('Reset', 'Are you sure you want to reset this leaderboard?'):
+            highscores = shelve.open('highscores')
+            highscores[test_id] = [[0, '0.00%', time.strftime('%d/%m/%Y')]] * 10
+            highscores.sync()
+            highscores.close()
+            self.update()
+
     def get_id(self):
         if self.test.get() == 0:
             return 'easy'
@@ -72,13 +82,3 @@ class HighScores(tk.Frame):
             return 'advanced'
         elif self.test.get() == 2:
             return 'nums'
-
-    def reset_scores(self):
-        test_id = self.get_id()
-
-        if messagebox.askokcancel('Reset', 'Are you sure you want to reset this leaderboard?'):
-            highscores = shelve.open('data/highscores')
-            highscores[test_id] = [[0, '0.00%', time.strftime('%d/%m/%Y')]] * 10
-            highscores.sync()
-            highscores.close()
-            self.update()
