@@ -38,36 +38,43 @@ class HighScores(tk.Frame):
         self.graph_button.grid(column=0, row=9)
 
     def update(self):
-        if self.test.get() == 0:
-            test_id = 'easy'
-        elif self.test.get() == 1:
-            test_id = 'advanced'
-        elif self.test.get() == 2:
-            test_id = 'nums'
+        test_id = self.get_id()
 
-        string = ''
+        self.string = ''
 
-        highscores = shelve.open('data/highscores')
+        highscores = shelve.open('highscores')
 
-        for i in range(1, 11):
-            string += str(i) + '.  ' + str(highscores[test_id][i-1][0])
-            if test_id != 'nums':
-                string += ' WPM '
-            else:
-                string += ' CPM '
-            string += '\t' + str(highscores[test_id][i-1][1]) + '\t' + str(highscores[test_id][i-1][2]) + '\n'
-
-        self.highscores_list.set(string)
+        self.build_highscores(highscores, test_id)
+        self.highscores_list.set(self.string)
 
         highscores.close()
 
-    def reset_scores(self):
+    def build_highscores(self, data, test_id):
+        try:
+            for i in range(1, 11):
+                self.string += str(i) + '.  ' + str(data[test_id][i-1][0])
+                if test_id != 'nums':
+                    self.string += ' WPM '
+                else:
+                    self.string += ' CPM '
+                self.string += '\t' + str(data[test_id][i-1][1]) + '\t' + str(data[test_id][i-1][2]) + '\n'
+        except:
+            # if shelve keys don't exist yet (first time this program is ever run), create them
+            data['easy'] = [[0, '0.00%', time.strftime('%d/%m/%Y')]] * 10
+            data['advanced'] = [[0, '0.00%', time.strftime('%d/%m/%Y')]] * 10
+            data['nums'] = [[0, '0.00%', time.strftime('%d/%m/%Y')]] * 10
+            self.build_highscores(data, test_id)
+
+    def get_id(self):
         if self.test.get() == 0:
-            test_id = 'easy'
+            return 'easy'
         elif self.test.get() == 1:
-            test_id = 'advanced'
+            return 'advanced'
         elif self.test.get() == 2:
-            test_id = 'nums'
+            return 'nums'
+
+    def reset_scores(self):
+        test_id = self.get_id()
 
         if messagebox.askokcancel('Reset', 'Are you sure you want to reset this leaderboard?'):
             highscores = shelve.open('data/highscores')

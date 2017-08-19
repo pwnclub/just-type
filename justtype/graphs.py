@@ -45,18 +45,21 @@ class GraphOverTime(tk.Frame):
         self.test_area_button.grid(column=0, row=8)
         self.graph_button.grid(column=0, row=9)
 
-    def update(self):
+    def get_id(self):
         if self.test.get() == 0:
-            test_id = 'easy'
+            return 'easy'
         elif self.test.get() == 1:
-            test_id = 'advanced'
+            return 'advanced'
         elif self.test.get() == 2:
-            test_id = 'nums'
+            return 'nums'
+
+    def update(self):
+        test_id = self.get_id()
 
         self.graph.clear()
 
-        test_count = []
-        wpm = []
+        self.test_count = []
+        self.wpm = []
         title = test_id.capitalize() + " test "
 
         if test_id == 'nums':
@@ -64,28 +67,32 @@ class GraphOverTime(tk.Frame):
         else:
             title += "WPM"
 
-        graphs = shelve.open('data/graphs')
+        graphs = shelve.open('graphs')
 
-        for i in range(0, len(graphs[test_id])):
-            test_count.append(i)
-            wpm.append(graphs[test_id][i])
+        self.build_graphs(graphs, test_id)
 
         self.graph.set_title(title)
-        self.graph.plot(test_count, wpm)
+        self.graph.plot(self.test_count, self.wpm)
         self.canvas.show()
 
         graphs.close()
 
+    def build_graphs(self, data, test_id):
+        try:
+            for i in range(0, len(data[test_id])):
+                self.test_count.append(i)
+                self.wpm.append(data[test_id][i])
+        except:
+            data['easy'] = []
+            data['advanced'] = []
+            data['nums'] = []
+            self.build_graphs(data, test_id)
+
     def reset_graphs(self):
-        if self.test.get() == 0:
-            test_id = 'easy'
-        elif self.test.get() == 1:
-            test_id = 'advanced'
-        elif self.test.get() == 2:
-            test_id = 'nums'
+        test_id = self.get_id()
 
         if messagebox.askokcancel('Reset', 'Are you sure you want to reset this leaderboard?'):
-            graphs = shelve.open('data/graphs')
+            graphs = shelve.open('graphs')
             graphs[test_id] = []
             graphs.close()
             self.update()

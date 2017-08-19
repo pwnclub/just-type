@@ -19,7 +19,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 from matplotlib.figure import Figure
 matplotlib.use('TkAgg')
 
-TIMER_LIMIT = 20
+TIMER_LIMIT = 3
 
 
 class TestArea(tk.Frame):
@@ -284,8 +284,8 @@ class TestArea(tk.Frame):
 
             # if the user types a word or two it doesn't store the score (assumes afk)
             if cpm > 15:
-                highscores = shelve.open('data/highscores', writeback=True)
-                graphs = shelve.open('data/graphs', writeback=True)
+                highscores = shelve.open('highscores', writeback=True)
+                graphs = shelve.open('graphs', writeback=True) 
 
                 test_id = ''
                 if(self.test.get() == 0):
@@ -295,14 +295,17 @@ class TestArea(tk.Frame):
                 elif(self.test.get() == 2):
                     test_id = 'nums'
 
+                self.new_highscores = []
+                self.retrieve_data(highscores, graphs, test_id)
+
                 if(test_id != 'nums'):
-                    highscores[test_id].append([wpm, '{}%'.format(accuracy), time.strftime('%d/%m/%Y')])
+                    self.new_highscores.append([wpm, '{}%'.format(accuracy), time.strftime('%d/%m/%Y')])
                     graphs[test_id].append(wpm)
                 else:
-                    highscores[test_id].append([cpm, '{}%'.format(accuracy), time.strftime('%d/%m/%Y')])
+                    self.new_highscores.append([cpm, '{}%'.format(accuracy), time.strftime('%d/%m/%Y')])
                     graphs[test_id].append(cpm)
 
-                highscores[test_id] = sorted(highscores[test_id], reverse=True)[:10]
+                highscores[test_id] = sorted(self.new_highscores, reverse=True)[:10]
 
                 graphs.close()
                 highscores.close()
@@ -310,6 +313,19 @@ class TestArea(tk.Frame):
             self.entry.delete(0, tk.END)
             self.entry.config(state=tk.DISABLED)
             self.stop = True
+
+    def retrieve_data(self, data_h, data_g, test_id):
+        try:
+            self.new_highscores = data_h[test_id]
+            check_graph = data_g[test_id]
+        except:
+            data_h['easy'] = [[0, '0.00%', time.strftime('%d/%m/%Y')]] * 10
+            data_h['advanced'] = [[0, '0.00%', time.strftime('%d/%m/%Y')]] * 10
+            data_h['nums'] = [[0, '0.00%', time.strftime('%d/%m/%Y')]] * 10
+            data_g['easy'] = []
+            data_g['advanced'] = []
+            data_g['highscores'] = []
+            self.retrieve_data(data_h, data_g, test_id)
 
     def countup(self, count):
         if not self.start_count:
