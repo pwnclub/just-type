@@ -3,7 +3,7 @@ Just Type is an offline, minimalist typing speed test application built with Tki
 
 It is loosely based the site [10fastfingers](http://10fastfingers.com/typing-test/english), using similar wordbanks for the 'easy' and 'advanced' tests.
 
-![Just Type](http://i.imgur.com/YS79Jk2.gifv)
+![Just Type](http://i.imgur.com/YS79Jk2.gif)
 
 # Features
 * Visual feedback for words that have been typed and are currently being typed
