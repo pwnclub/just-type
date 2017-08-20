@@ -30,7 +30,7 @@ More info can be found on the [matplotlib installation site](https://matplotlib.
 
 ## Usage
 
-To launch Just Type, simply run `__main__.py` and have fun!
+To launch Just Type, simply run `__main__.pyw` and have fun!
 
 <p align="center">
   <img src="http://i.imgur.com/sGglfSM.png" alt="Submit Custom" width="400"/>
