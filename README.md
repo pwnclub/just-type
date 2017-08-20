@@ -3,7 +3,7 @@ Just Type is an offline, minimalist typing speed test application built with Tki
 
 It is loosely based the site [10fastfingers](http://10fastfingers.com/typing-test/english), using similar wordbanks for the 'easy' and 'advanced' tests.
 
-![Just Type](https://github.com/pwnclub/just-type/blob/master/justtype/art/just_type.gif)
+![Just Type](http://i.imgur.com/YS79Jk2.gifv)
 
 # Features
 * Visual feedback for words that have been typed and are currently being typed
@@ -14,5 +14,5 @@ It is loosely based the site [10fastfingers](http://10fastfingers.com/typing-tes
 * Submit your own text for a customized test that ends when you're done typing it
 
 <p align="center">
-  <img src="https://github.com/pwnclub/just-type/blob/master/justtype/art/highscores.PNG"/>
+  <img src="http://i.imgur.com/SHWOUrI.png"/>
 </p>
