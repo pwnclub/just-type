@@ -269,7 +269,8 @@ class TestArea(tk.Frame):
         if not self.start_count:
             return
 
-        self.time_or_wpm.set('{}'.format(math.ceil(count)))
+        m, s = divmod(math.ceil(count), 60)
+        self.time_or_wpm.set('{}:{:>02}'.format(m, s))
 
         if count > 0:
             self.after(100, self.countdown, count - 0.1)
@@ -369,7 +370,8 @@ class TestArea(tk.Frame):
             return
 
         if not self.stop:
-            self.time_or_wpm.set('{}'.format(math.ceil(count)))
+            m, s = divmod(math.ceil(count), 60)
+            self.time_or_wpm.set('{}:{:>02}'.format(m, s))
 
             self.after(100, self.countup, count + 0.1)
 
